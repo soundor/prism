@@ -42,4 +42,4 @@ Merging the release PR creates a draft. The **Release** workflow verifies the ta
 
 If using the default GitHub token, enable **Allow GitHub Actions to create and approve pull requests** in repository settings. To trigger CI on release PRs, configure a `RELEASE_PR_TOKEN` from an app or user with permission to create the PR and release.
 
-Source code is licensed under [AGPL-3.0-only](LICENSE).
+Source code is licensed under [AGPL-3.0-only](LICENSE). See [Branding](BRANDING.md) for guidance on using the Soundor and Prism names and logos.
