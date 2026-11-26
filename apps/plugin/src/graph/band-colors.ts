@@ -67,3 +67,31 @@ export function contrastRatio(a: string, b: string): number {
   const [high, low] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (high! + 0.05) / (low! + 0.05);
 }
+
+/** WCAG 2's minimum contrast for graphics, such as a band's dot. */
+export const GRAPHIC_CONTRAST = 3;
+
+/**
+ * The band's colour on the light chrome: its graph colour, darkened toward
+ * black in small steps until it has GRAPHIC_CONTRAST with `background`. The
+ * graph colours are pastels for the dark display and barely show there.
+ */
+export function bandColorOnLight(theme: Theme, slot: number, background: string): string {
+  const color = bandColor(theme, slot);
+  for (let shade = 1; shade > 0; shade -= 0.02) {
+    const darker = scale(color, shade);
+    if (contrastRatio(darker, background) >= GRAPHIC_CONTRAST) return darker;
+  }
+  return '#000000';
+}
+
+/** Each channel times `factor`, as `#rrggbb`. */
+function scale(hex: string, factor: number): string {
+  return `#${[1, 3, 5]
+    .map((i) =>
+      Math.round(parseInt(hex.slice(i, i + 2), 16) * factor)
+        .toString(16)
+        .padStart(2, '0'),
+    )
+    .join('')}`;
+}

@@ -22,6 +22,8 @@ export interface BandMarkerProps {
   soloed: boolean;
   /** The plugin is bypassed: everything fades, and stays readable. */
   bypassed: boolean;
+  /** In the editor's selection: a larger face with a ring. */
+  selected: boolean;
 }
 
 /**
@@ -29,7 +31,7 @@ export interface BandMarkerProps {
  * on the 0 dB line. Cuts have a rounded-square face, the others a circle; a
  * bypassed band's face is hollow, and a band that is not stereo has a badge.
  */
-export function BandMarker({ band, dimmed, soloed, bypassed }: BandMarkerProps) {
+export function BandMarker({ band, dimmed, soloed, bypassed, selected }: BandMarkerProps) {
   const gain = hasGain(band.type);
   return (
     <Plot.Marker
@@ -37,6 +39,7 @@ export function BandMarker({ band, dimmed, soloed, bypassed }: BandMarkerProps) 
       y={gain ? band.gain : 0}
       label={String(band.slot)}
       radius={BOX / 2}
+      selected={selected}
       accessibilityLabel={`Band ${band.slot}, ${filterTypeLabel(band.type)}`}
       describeValue={() => describeBand(band)}
       render={(state) => (
@@ -46,7 +49,7 @@ export function BandMarker({ band, dimmed, soloed, bypassed }: BandMarkerProps) 
   );
 }
 
-interface MarkerFaceProps extends BandMarkerProps {
+interface MarkerFaceProps extends Omit<BandMarkerProps, 'selected'> {
   state: PlotMarkerState;
 }
 

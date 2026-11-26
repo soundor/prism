@@ -5,8 +5,11 @@ import { expect, test } from 'vitest';
 
 import { App } from '../../app/app';
 
-const markers = () => screen.queryAllByLabelText(/^Band \d+, /);
-const markerText = (name: string) => screen.getByLabelText(name).accessibility.value?.text;
+// The band strip's chips have the same labels: markers are the ones that are not options.
+const markers = () =>
+  screen.queryAllByLabelText(/^Band \d+, /).filter((node) => node.accessibility.role !== 'option');
+const markerText = (name: string) =>
+  markers().find((node) => node.accessibility.label === name)?.accessibility.value?.text;
 
 test('draws a marker for each active slot only', async () => {
   await render(<App />);
