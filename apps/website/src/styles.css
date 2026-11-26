@@ -1,0 +1,10 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+:root {
+  --prism-low: #ff8f4d;
+  --prism-low-mid: #b8a3ff;
+  --prism-high-mid: #c4ec6f;
+  --prism-high: #ffc043;
+}

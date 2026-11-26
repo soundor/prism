@@ -1,0 +1,29 @@
+name: Build and pack the VST3
+description: Package Soundor Prism as a versioned ZIP for the release
+inputs:
+  platform:
+    description: linux-x86_64 or windows-x64
+    required: true
+outputs:
+  zip:
+    description: Path to the packaged VST3
+    value: ${{ steps.pack.outputs.zip }}
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: pnpm build:vst3
+    - id: pack
+      shell: bash
+      env:
+        PLATFORM: ${{ inputs.platform }}
+      run: |
+        file=$(node --input-type=module -e 'import { platforms } from "./apps/website/src/release.ts"; const platform = platforms.find((entry) => entry.suffix === process.env.PLATFORM); if (!platform) throw new Error("Unknown release platform"); console.log(platform.file)')
+        zip="$RUNNER_TEMP/$file"
+        cd apps/plugin/.soundor/dist/vst3
+        if [[ "$RUNNER_OS" == Windows ]]; then
+          7z a -tzip "$(cygpath -w "$zip")" "Soundor Prism.vst3" > /dev/null
+        else
+          zip -qr "$zip" "Soundor Prism.vst3"
+        fi
+        echo "zip=$zip" >> "$GITHUB_OUTPUT"

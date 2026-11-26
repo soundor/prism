@@ -1,0 +1,25 @@
+{
+  "name": "prism-workspace",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "build:web": "turbo run build:web",
+    "build:vst3": "pnpm --filter prism build:vst3",
+    "check": "pnpm format && pnpm lint && turbo run format:rust typecheck test:rust build",
+    "dev": "turbo run dev:web --filter=prism",
+    "format": "oxfmt --check",
+    "format:fix": "oxfmt",
+    "lint": "oxlint --deny-warnings .",
+    "test:rust": "turbo run test:rust",
+    "website": "turbo run dev --filter=prism-website"
+  },
+  "devDependencies": {
+    "oxfmt": "0.79.0",
+    "oxlint": "1.92.0",
+    "turbo": "2.11.12"
+  },
+  "engines": {
+    "node": "^24.0.0"
+  },
+  "packageManager": "pnpm@12.15.0"
+}

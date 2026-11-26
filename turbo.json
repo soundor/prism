@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalPassThroughEnv": ["RUSTUP_HOME", "CARGO_HOME", "SOUNDOR_CACHE"],
+  "tasks": {
+    "gen": { "cache": false },
+    "format:rust": { "dependsOn": ["gen"] },
+    "typecheck": { "dependsOn": ["gen"] },
+    "test:rust": { "dependsOn": ["gen"] },
+    "build:web": {
+      "dependsOn": ["gen"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/assets/brand/svg/**"],
+      "outputs": [".soundor/dist/web/**"]
+    },
+    "dev:web": { "dependsOn": ["gen"], "cache": false, "persistent": true },
+    "prism-website#build": {
+      "dependsOn": ["prism#build:web"],
+      "env": ["PRISM_SITE_BASE", "VITE_PRISM_SITE_ORIGIN"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/assets/brand/**",
+        "../plugin/CHANGELOG.md",
+        "../plugin/package.json"
+      ],
+      "outputs": ["dist/**"]
+    },
+    "prism-website#dev": {
+      "dependsOn": ["prism#build:web"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

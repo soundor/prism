@@ -1,0 +1,32 @@
+{
+  "name": "prism",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Soundor Prism, a four-band VST3 and web equalizer.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "build:vst3": "soundor build vst3",
+    "build:web": "soundor build web",
+    "dev:web": "soundor dev web",
+    "doctor": "soundor doctor",
+    "format:rust": "cargo fmt --manifest-path lib/Cargo.toml --check",
+    "gen": "soundor gen",
+    "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json"
+  },
+  "dependencies": {
+    "@soundor/components": "0.4.0",
+    "@soundor/react": "0.21.0",
+    "@soundor/vst3-runtime": "0.2.0",
+    "@soundor/web-runtime": "0.17.0",
+    "react": "19.3.1"
+  },
+  "devDependencies": {
+    "@soundor/config": "0.21.0",
+    "@soundor/vst3-host": "0.2.3",
+    "@types/react": "19.3.0",
+    "soundor": "0.21.0",
+    "typescript": "7.0.2"
+  }
+}

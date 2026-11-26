@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+
+engineStrict: true
+autoInstallPeers: false
+strictPeerDependencies: true
+allowBuilds:
+  esbuild: false
