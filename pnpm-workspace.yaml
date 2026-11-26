@@ -6,3 +6,5 @@ autoInstallPeers: false
 strictPeerDependencies: true
 allowBuilds:
   esbuild: false
+minimumReleaseAgeExclude:
+  - '@soundor/components@0.5.0'
