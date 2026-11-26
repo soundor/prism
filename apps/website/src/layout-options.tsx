@@ -6,16 +6,7 @@ import logo from '../../../assets/brand/svg/soundor-prism-logo.svg?url';
 
 export const repository = 'https://github.com/soundor/prism';
 export const soundor = 'https://soundor.dev';
-export const soundorLink = {
-  text: (
-    <span className="inline-flex items-center gap-1">
-      Soundor
-      <ExternalLink aria-hidden className="size-3" />
-    </span>
-  ),
-  url: `${soundor}/`,
-  external: true,
-};
+export const soundorLink = { text: 'Soundor', url: `${soundor}/`, external: true };
 
 export const layoutOptions = {
   nav: {
@@ -32,5 +23,16 @@ export const layoutOptions = {
     ),
   },
   githubUrl: repository,
-  links: [{ text: 'Changelog', url: '/docs/changelog' }, soundorLink],
+  links: [
+    { text: 'Changelog', url: '/docs/changelog' },
+    {
+      ...soundorLink,
+      text: (
+        <span className="inline-flex items-center gap-1">
+          {soundorLink.text}
+          <ExternalLink aria-hidden className="size-3" />
+        </span>
+      ),
+    },
+  ],
 } satisfies BaseLayoutProps;

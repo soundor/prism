@@ -38,7 +38,7 @@ function Documentation() {
   return (
     <DocsLayout
       {...layoutOptions}
-      links={[{ text: 'Download', url: '/#download' }, soundorLink]}
+      links={[soundorLink]}
       tree={source.getPageTree()}
       sidebar={{ tabs: false }}
     >
