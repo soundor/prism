@@ -1,40 +1,16 @@
-mod eq;
-
-use eq::Equalizer;
 use soundor::prelude::*;
 
+/// Prism's processor. The band, bypass and gain parameters are declared, but
+/// the audio is not processed yet: every block passes through unchanged.
 #[derive(Default)]
-pub struct PluginProcessor(Equalizer);
+pub struct PluginProcessor;
 
 impl Processor for PluginProcessor {
-    fn prepare(&mut self, ctx: &PrepareContext) {
-        self.0.prepare(ctx.sample_rate);
-        let p = ctx.params;
-        self.0
-            .configure([p.low, p.low_mid, p.high_mid, p.high], p.bypass);
-        self.0.reset();
-    }
+    fn prepare(&mut self, _ctx: &PrepareContext) {}
 
-    fn process(&mut self, ctx: &mut ProcessContext) {
-        let p = ctx.params;
-        self.0
-            .configure([p.low, p.low_mid, p.high_mid, p.high], p.bypass);
-        let mut channels = ctx.audio.channels();
-        let Some(left) = channels.next() else { return };
-        if let Some(right) = channels.next() {
-            for (left, right) in left.iter_mut().zip(right) {
-                [*left, *right] = self.0.tick([*left, *right]);
-            }
-        } else {
-            for left in left {
-                *left = self.0.tick([*left, 0.0])[0];
-            }
-        }
-    }
+    fn process(&mut self, _ctx: &mut ProcessContext) {}
 
-    fn reset(&mut self) {
-        self.0.reset();
-    }
+    fn reset(&mut self) {}
 }
 
 pub struct PluginController;
@@ -45,3 +21,39 @@ impl Controller for PluginController {
 }
 
 soundor::export!(PluginProcessor, PluginController);
+
+#[cfg(test)]
+mod tests {
+    use super::PluginProcessor;
+    use soundor::testing::TestProcessor;
+
+    fn signal(frames: usize, phase: f32) -> Vec<f32> {
+        (0..frames)
+            .map(|i| (i as f32 * 0.05 + phase).sin() * 0.5)
+            .collect()
+    }
+
+    #[test]
+    fn passes_audio_through_unchanged() {
+        let input = [signal(1024, 0.0), signal(1024, 1.0)];
+        let mut processor = TestProcessor::<PluginProcessor>::new()
+            .sample_rate(48_000.0)
+            .block_size(256)
+            .channels(2)
+            .parameter("band1Active", 1.0)
+            .parameter("band1Gain", 12.0)
+            .parameter("inputGain", -6.0)
+            .build();
+        assert_eq!(processor.process(&input), input);
+    }
+
+    #[test]
+    fn bypass_passes_audio_through_unchanged() {
+        let input = [signal(512, 0.3), signal(512, 2.0)];
+        let mut processor = TestProcessor::<PluginProcessor>::new()
+            .channels(2)
+            .parameter("bypass", 1.0)
+            .build();
+        assert_eq!(processor.process(&input), input);
+    }
+}
