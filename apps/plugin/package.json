@@ -14,7 +14,7 @@
     "gen": "soundor gen",
     "test:e2e": "playwright test",
     "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
   },
   "dependencies": {
     "@soundor/components": "0.5.0",
@@ -27,6 +27,7 @@
     "@playwright/test": "1.65.1",
     "@soundor/config": "0.21.0",
     "@soundor/vst3-host": "0.2.3",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "soundor": "0.21.0",
     "typescript": "7.0.2"
