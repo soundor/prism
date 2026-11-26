@@ -1,0 +1,51 @@
+diff --git a/dist/index.d.ts b/dist/index.d.ts
+index 075f537674f1ccd6e7c3ae61c53be13871e4b09c..6aa35fd8cbc330a7cc478f9a637c05370aa36a03 100644
+--- a/dist/index.d.ts
++++ b/dist/index.d.ts
+@@ -489,6 +489,8 @@ interface MenuItemProps {
+   disabled?: boolean;
+   /** Before the label: a small glyph of your own, in the label's colour. */
+   icon?: ReactNode;
++  /** Render the icon with the row's current foreground color. */
++  renderIcon?: (state: MenuRowState) => ReactNode;
+   /** Read after the label, for what it is not clear from it. */
+   hint?: string;
+   /**
+@@ -496,8 +498,12 @@ interface MenuItemProps {
+    * with one leaves room for the tick.
+    */
+   checked?: boolean;
++  /** Highlight the checked row with the selection accent, as in Select. */
++  highlightChecked?: boolean;
++  /** Hide the checkmark while keeping the checked state. */
++  hideCheckmark?: boolean;
+ }
+-declare function Item({ children, onPress, disabled, icon, hint, checked }: MenuItemProps): import("react").JSX.Element;
++declare function Item({ children, onPress, disabled, icon, renderIcon, hint, checked, highlightChecked, hideCheckmark }: MenuItemProps): import("react").JSX.Element;
+ /** A line between groups of items. */
+ declare function Divider$1(): import("react").JSX.Element;
+ interface MenuLabelProps {
+diff --git a/dist/index.js b/dist/index.js
+index 182bf28a52b32e2f26d3a438313dca8cdde84aae..9dbd566d06d5e1a22768e967888f066c7a79d7e4 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -2292,14 +2292,17 @@ function SubmenuPopup({ children, accessibilityLabel, debugId, sub, list, trigge
+ 	});
+ }
+ // src/components/menu/menu.tsx
+-function Item({ children, onPress, disabled, icon, hint, checked }) {
++function Item({ children, onPress, disabled, icon, renderIcon, hint, checked, highlightChecked, hideCheckmark }) {
+ 	return /* @__PURE__ */ jsx(MenuRow, {
+ 		label: children,
+ 		select: onPress,
+ 		disabled,
+ 		icon,
++		renderIcon,
+ 		hint,
+-		checked
++		checked,
++		highlightChecked,
++		hideCheckmark
+ 	});
+ }
+ /** A line between groups of items. */

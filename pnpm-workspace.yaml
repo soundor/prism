@@ -8,3 +8,5 @@ allowBuilds:
   esbuild: false
 minimumReleaseAgeExclude:
   - '@soundor/components@0.5.0'
+patchedDependencies:
+  '@soundor/components@0.5.0': patches/@soundor__components@0.5.0.patch

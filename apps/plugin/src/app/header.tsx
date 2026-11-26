@@ -1,13 +1,15 @@
+import { Toggle } from '@soundor/components';
 import { useTheme } from '@soundor/components/theme';
-import { Image, View } from '@soundor/react';
+import { Image, useParameter, View } from '@soundor/react';
+import { parameters } from 'soundor:parameters';
 
 import logo from '../../../../assets/brand/svg/soundor-prism-logo.svg';
 import { HEADER_HEIGHT } from './layout';
 
-// Logo, presets, undo/redo, A/B and bypass. The controls arrive in later
-// parts; the logo and the bar's place in the layout are final.
+// Logo and global bypass. Presets, undo/redo and A/B go between them.
 export function Header() {
   const theme = useTheme();
+  const bypassed = useParameter(parameters.bypass);
   return (
     <View
       accessibilityRole="toolbar"
@@ -27,6 +29,24 @@ export function Header() {
         source={logo}
         accessibilityLabel="Soundor Prism"
         style={{ width: 78, height: 30, resizeMode: 'contain' }}
+      />
+      <View style={{ flex: 1 }} />
+      <Toggle
+        parameter={parameters.bypass}
+        label="Bypass"
+        accessibilityLabel="Global bypass"
+        size="sm"
+        styles={{
+          root: {
+            alignSelf: 'center',
+            ...(bypassed && {
+              backgroundColor: theme.color.selected,
+              borderColor: theme.color.warning,
+            }),
+          },
+          label: bypassed ? { color: theme.color.displayWarning } : undefined,
+          indicator: bypassed ? { backgroundColor: theme.color.displayWarning } : undefined,
+        }}
       />
     </View>
   );
