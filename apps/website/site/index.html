@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Soundor Prism is a four-band equalizer for VST3 hosts and the browser."
+    />
+    <meta name="theme-color" content="#10121a" />
+    <link rel="icon" type="image/svg+xml" href="./brand/icon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>Soundor Prism — Four-band equalizer</title>
+  </head>
+  <body>
+    <header class="wrap masthead">
+      <img src="./brand/logo.svg" alt="Soundor Prism" width="150" height="58" />
+      <a href="https://github.com/soundor/prism">GitHub</a>
+    </header>
+    <main class="wrap">
+      <section class="hero" aria-labelledby="title">
+        <div>
+          <h1 id="title">A four-band equalizer.</h1>
+          <p>
+            Shape bass, mids, and treble with four fixed-frequency bands. Switch to Original to hear
+            what changed.
+          </p>
+          <a class="button" href="./embed/index.html">Open the EQ in a new page</a>
+          <p class="hint">
+            Press Play for the synth loop, or choose Audio file to try your own. Your file stays in
+            the browser.
+          </p>
+        </div>
+        <iframe
+          src="./embed/index.html"
+          title="Play the Soundor Prism equalizer"
+          allow="autoplay"
+        ></iframe>
+      </section>
+      <dl class="bands" aria-label="Equalizer bands">
+        <div class="low">
+          <dt>100 Hz</dt>
+          <dd>Low shelf</dd>
+        </div>
+        <div class="low-mid">
+          <dt>400 Hz</dt>
+          <dd>Low-mid bell</dd>
+        </div>
+        <div class="high-mid">
+          <dt>2 kHz</dt>
+          <dd>High-mid bell</dd>
+        </div>
+        <div class="high">
+          <dt>8 kHz</dt>
+          <dd>High shelf</dd>
+        </div>
+      </dl>
+    </main>
+    <footer class="wrap foot">
+      <a href="https://soundor.dev">Built with Soundor</a>
+      <a href="https://github.com/soundor/prism#develop">Build the VST3</a>
+    </footer>
+  </body>
+</html>
