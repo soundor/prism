@@ -182,6 +182,8 @@ test('analyzer controls can hide the axis, freeze the trace and change analyzer 
   await mode.getByRole('radio', { name: 'Pre', exact: true }).click();
   await freeze.click();
   await expect(freeze).toHaveAttribute('aria-pressed', 'true');
+  await freeze.click();
+  await expect(freeze).toHaveAttribute('aria-pressed', 'false');
 
   const settings = view.getByRole('button', { name: 'Analyzer settings' });
   await settings.click();
@@ -194,11 +196,11 @@ test('analyzer controls can hide the axis, freeze the trace and change analyzer 
   await expect(settings).toBeFocused();
   await expect(axis).toBeVisible();
 
-  const range = view.getByRole('combobox', { name: 'Response display range' });
-  await expect(range).toBeVisible();
-  await range.click();
-  await page.getByRole('menuitem', { name: '±24 dB' }).click();
-  await expect(range).toContainText('±24 dB');
+  const range = view.getByRole('radiogroup', { name: 'Response display range' });
+  await expect(range.getByRole('radio', { name: '±12' })).toBeChecked();
+  const wide = range.getByRole('radio', { name: '±24' });
+  await wide.click();
+  await expect(wide).toBeChecked();
 });
 
 test('simulated output clips and each clip indicator can be cleared', async ({ page }) => {

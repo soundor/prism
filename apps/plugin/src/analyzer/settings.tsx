@@ -30,13 +30,11 @@ export function AnalyzerSettings() {
         align="center"
         offset={10}
         accessibilityLabel="Analyzer settings"
-        styles={{ root: { width: 348, padding: 14 } }}
+        styles={{ root: { width: 392, padding: 10 } }}
       >
         <Popover.Arrow />
         <View style={{ gap: 4 }}>
-          <Text style={[textStyle(theme, 'technical', theme.color.textMuted), { marginBottom: 4 }]}>
-            Analyzer settings
-          </Text>
+          <Text style={[textStyle(theme, 'title'), { marginBottom: 4 }]}>Analyzer settings</Text>
           <Setting
             label="FFT size"
             field={state.analyzerFftSize}
@@ -47,7 +45,7 @@ export function AnalyzerSettings() {
             field={state.analyzerWindow}
             values={{
               hann: 'Hann',
-              blackmanHarris: 'Blackman-H.',
+              blackmanHarris: 'Blackman–Harris',
               hamming: 'Hamming',
               flatTop: 'Flat top',
             }}
@@ -126,10 +124,11 @@ function SettingRow<T extends string>({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: 12,
         minHeight: 28,
       }}
     >
-      <Text style={textStyle(theme, 'caption', theme.color.textSecondary)}>{label}</Text>
+      <Text style={textStyle(theme, 'body', theme.color.textSecondary)}>{label}</Text>
       <SegmentedControl<T>
         size="sm"
         styles={compactSegments}

@@ -1,4 +1,4 @@
-import type { PlotSamples, PlotSource } from '@soundor/components';
+import type { PlotBandSamples, PlotSamples, PlotSource } from '@soundor/components';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
 
@@ -58,6 +58,9 @@ export function createSimulation() {
   const postRaw = new Float64Array(gridFrequencies.length);
   const pre = channel<PlotSamples>({ points: prePoints });
   const post = channel<PlotSamples>({ points: postPoints });
+  // The plot clips this band to the current analyzer floor.
+  const postBand = { lower: initial(), upper: postPoints };
+  const postFill = channel<PlotBandSamples>(postBand);
   const peak = channel<PlotSamples>({ points: peakPoints });
   const meters = channel<[number, number]>([-60, -60]);
   let frozen = false;
@@ -111,12 +114,14 @@ export function createSimulation() {
     }
     pre.publish({ points: prePoints });
     post.publish({ points: postPoints });
+    postFill.publish(postBand);
     peak.publish({ points: peakPoints });
   }
 
   return {
     pre: pre.source,
     post: post.source,
+    postFill: postFill.source,
     peak: peak.source,
     meters: meters.source,
     setFrozen(value: boolean) {

@@ -1,6 +1,7 @@
-import { SegmentedControl, Select, Toggle } from '@soundor/components';
-import { textStyle, useTheme } from '@soundor/components/theme';
-import { Text, useStateValue, View } from '@soundor/react';
+import { SegmentedControl } from '@soundor/components';
+import { ring, textStyle, useTheme } from '@soundor/components/theme';
+import { Pause, Play } from '@soundor/icons/lucide';
+import { Pressable, Text, useStateValue, View } from '@soundor/react';
 import { useState } from 'react';
 import { state, type AnalyzerMode, type DisplayRange } from 'soundor:state';
 
@@ -13,6 +14,7 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
   const analyzer = useStateValue(state.analyzerMode);
   const range = useStateValue(state.displayRange);
   const [frozen, setFrozen] = useState(false);
+  const FreezeIcon = frozen ? Play : Pause;
   const caption = textStyle(theme, 'technical', theme.color.textMuted);
   return (
     <View
@@ -44,18 +46,33 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         ]}
         onChange={(value) => state.analyzerMode.set(value)}
       />
-      <Toggle
-        label="Freeze"
+      <Pressable
         accessibilityLabel="Freeze spectrum"
-        size="sm"
-        value={frozen}
+        accessibilityRole="togglebutton"
+        accessibilityState={{ checked: frozen }}
         disabled={analyzer === 'off'}
-        onChange={(value) => {
-          setFrozen(value);
-          onFreeze(value);
+        onPress={() => {
+          setFrozen(!frozen);
+          onFreeze(!frozen);
         }}
-        styles={{ root: { alignSelf: 'center' } }}
-      />
+        style={({ hovered, focusVisible }) => ({
+          width: 28,
+          height: 24,
+          borderRadius: theme.radius.radiusMd,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: frozen || hovered ? theme.color.surfaceInset : 'transparent',
+          opacity: analyzer === 'off' ? theme.opacity.opacityDisabled : 1,
+          cursor: analyzer === 'off' ? 'default' : 'pointer',
+          ...ring(theme, focusVisible),
+        })}
+      >
+        <FreezeIcon
+          size={14}
+          color={frozen ? theme.color.positive : theme.color.textSecondary}
+          strokeWidth={1.75}
+        />
+      </Pressable>
       <AnalyzerSettings />
       <View
         style={{
@@ -65,16 +82,14 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         }}
       />
       <Text style={caption}>Range</Text>
-      <Select<DisplayRange>
-        accessibilityLabel="Response display range"
+      <SegmentedControl<DisplayRange>
+        label="Response display range"
         size="sm"
-        styles={{ root: { alignSelf: 'center' } }}
-        width={76}
-        side="top"
+        styles={compactSegments}
         value={range}
         options={(Object.keys(rangeDecibels) as DisplayRange[]).map((value) => ({
           value,
-          label: `±${rangeDecibels[value]} dB`,
+          label: `±${rangeDecibels[value]}`,
         }))}
         onChange={(value) => state.displayRange.set(value)}
       />
