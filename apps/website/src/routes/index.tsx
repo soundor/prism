@@ -20,14 +20,7 @@ const bands = [
 
 function Home() {
   return (
-    <HomeLayout
-      {...layoutOptions}
-      links={[
-        { text: 'Docs', url: '/docs' },
-        { text: 'Download', url: '/#download' },
-        ...layoutOptions.links,
-      ]}
-    >
+    <HomeLayout {...layoutOptions} links={[{ text: 'Docs', url: '/docs' }, ...layoutOptions.links]}>
       <main className="relative isolate w-full overflow-hidden">
         <div
           aria-hidden
