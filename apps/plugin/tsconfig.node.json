@@ -2,12 +2,12 @@
   "compilerOptions": {
     "target": "ES2023",
     "lib": ["ES2023"],
-    "types": [],
+    "types": ["node"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["soundor.config.ts", "factory-presets.ts"]
+  "include": ["soundor.config.ts", "factory-presets.ts", "playwright.config.ts", "scripts", "e2e"]
 }

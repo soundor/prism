@@ -27,6 +27,7 @@
     "@playwright/test": "1.65.1",
     "@soundor/config": "0.21.0",
     "@soundor/vst3-host": "0.2.3",
+    "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "soundor": "0.21.0",
     "typescript": "7.0.2"
