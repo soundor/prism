@@ -1,7 +1,7 @@
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
 
-import { GRAPH_HEIGHT } from '../layout';
+import { GRAPH_HEIGHT } from '../app/layout';
 
 // The equalizer graph: response curves, band markers and the analyzer.
 export function Graph() {

@@ -1,7 +1,7 @@
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
 
-import { FOOTER_HEIGHT, GAP } from '../layout';
+import { FOOTER_HEIGHT, GAP } from './layout';
 
 // Analyzer, display and view options.
 export function Footer() {

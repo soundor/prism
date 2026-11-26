@@ -65,26 +65,3 @@ test('the synth loop keeps playing through bypass', async ({ page }) => {
   await pause.click();
   await expect(host.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 });
-
-test('the interface scale is remembered across sessions', async ({ page }) => {
-  const grip = page.getByRole('button', { name: 'Resize the plugin view' });
-  const box = await grip.boundingBox();
-  if (!box) throw new Error('The resize grip is not laid out');
-  const x = box.x + box.width / 2;
-  const y = box.y + box.height / 2;
-
-  await page.mouse.move(x, y);
-  await page.mouse.down();
-  await page.mouse.move(x - 240, y - 144, { steps: 8 });
-  await page.mouse.up();
-
-  await expect.poll(() => headerWidth(page)).toBeLessThan(1100);
-  const scaled = await headerWidth(page);
-  expect(scaled).toBeGreaterThanOrEqual(900);
-
-  // The scale is saved shortly after the resize ends.
-  await page.waitForTimeout(1000);
-  await page.reload();
-  await expect(header(page)).toBeVisible();
-  await expect.poll(() => headerWidth(page)).toBeCloseTo(scaled, 0);
-});

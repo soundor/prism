@@ -1,6 +1,6 @@
 import { View } from '@soundor/react';
 
-import { GRAPH_HEIGHT, METER_WIDTH } from '../layout';
+import { GRAPH_HEIGHT, METER_WIDTH } from '../app/layout';
 
 // Input gain, the stereo output meter with its clip lights, and output gain.
 export function MeterColumn() {

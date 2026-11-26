@@ -1,7 +1,7 @@
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
 
-import { EDGE, GAP, INSPECTOR_HEIGHT } from '../layout';
+import { EDGE, GAP, INSPECTOR_HEIGHT } from '../app/layout';
 
 // The persistent band inspector: the band strip, then one row of parameter
 // cells whose positions never change.

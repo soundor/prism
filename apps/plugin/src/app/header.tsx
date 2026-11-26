@@ -2,7 +2,7 @@ import { useTheme } from '@soundor/components/theme';
 import { Image, View } from '@soundor/react';
 
 import logo from '../../../../assets/brand/svg/soundor-prism-logo.svg';
-import { HEADER_HEIGHT } from '../layout';
+import { HEADER_HEIGHT } from './layout';
 
 // Logo, presets, undo/redo, A/B and bypass. The controls arrive in later
 // parts; the logo and the bar's place in the layout are final.

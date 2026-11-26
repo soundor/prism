@@ -1,12 +1,12 @@
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
 
-import { EDGE, EDITOR_HEIGHT, EDITOR_WIDTH, GAP } from '../layout';
-import { Footer } from './Footer';
-import { Graph } from './Graph';
-import { Header } from './Header';
-import { Inspector } from './Inspector';
-import { MeterColumn } from './MeterColumn';
+import { EDGE, EDITOR_HEIGHT, EDITOR_WIDTH, GAP } from './layout';
+import { Footer } from './footer';
+import { Graph } from '../graph/graph';
+import { Header } from './header';
+import { Inspector } from '../inspector/inspector';
+import { MeterColumn } from '../meters/meter-column';
 
 export function App() {
   const theme = useTheme();

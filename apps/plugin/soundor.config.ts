@@ -17,8 +17,8 @@ import {
   filterTypes,
   slopes,
   type BandSettings,
-} from './src/catalog';
-import { factoryPresets } from './src/factory-presets';
+} from './src/bands/catalog';
+import { factoryPresets } from './src/presets/factory-presets';
 
 // Host-facing text. The UI formats values itself (true minus signs, signed
 // gains); hosts and typed input use these, which read back what they write.

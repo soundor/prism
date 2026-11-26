@@ -2,7 +2,7 @@
 // parameter snapshot: bands fill slots 1, 2, 3… in order, and every other slot
 // keeps its defaults (inactive).
 
-import type { BandSettings } from './catalog';
+import type { BandSettings } from '../bands/catalog';
 
 type BandSpec = Partial<BandSettings> & Pick<BandSettings, 'type' | 'frequency'>;
 
