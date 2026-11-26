@@ -10,6 +10,7 @@
     "build:web": "soundor build web",
     "dev:web": "soundor dev web",
     "doctor": "soundor doctor",
+    "format:rust": "cargo fmt --manifest-path lib/Cargo.toml --check",
     "gen": "soundor gen",
     "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json"

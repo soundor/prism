@@ -5,7 +5,7 @@
     "build": "turbo run build",
     "build:web": "turbo run build:web",
     "build:vst3": "pnpm --filter prism build:vst3",
-    "check": "pnpm format && pnpm lint && cargo fmt --manifest-path apps/plugin/lib/Cargo.toml --check && turbo run typecheck test:rust build",
+    "check": "pnpm format && pnpm lint && turbo run format:rust typecheck test:rust build",
     "dev": "turbo run dev:web --filter=prism",
     "format": "oxfmt --check",
     "format:fix": "oxfmt",

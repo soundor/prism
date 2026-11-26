@@ -3,6 +3,7 @@
   "globalPassThroughEnv": ["RUSTUP_HOME", "CARGO_HOME", "SOUNDOR_CACHE"],
   "tasks": {
     "gen": { "cache": false },
+    "format:rust": { "dependsOn": ["gen"] },
     "typecheck": { "dependsOn": ["gen"] },
     "test:rust": { "dependsOn": ["gen"] },
     "build:web": {
