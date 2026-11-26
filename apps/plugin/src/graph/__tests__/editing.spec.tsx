@@ -214,7 +214,7 @@ test('the cursor readout shows only while Alt is held', async () => {
   const user = userEvent.setup();
   await render(<App />);
   stubLayout();
-  const readout = () => screen.queryByText(/Hz .+ dB$/, { hidden: true });
+  const readout = () => screen.queryByText(/^\d+(?:\.\d+)? k?Hz .+ dB$/, { hidden: true });
 
   await user.pointer({ target: background(), clientX: 400, clientY: 200 });
   expect(readout()).toBeNull();

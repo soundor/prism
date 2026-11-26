@@ -167,3 +167,53 @@ test('B starts from defaults, keeps its edits independently, and can be copied t
   await expect(bell).toBeVisible();
   await expect(lowCut).toBeHidden();
 });
+
+test('analyzer controls can hide the axis, freeze the trace and change analyzer settings', async ({
+  page,
+}) => {
+  const view = page.getByRole('toolbar', { name: 'View', exact: true });
+  const mode = view.getByRole('radiogroup', { name: 'Analyzer mode' });
+  const axis = page.getByText('dBFS', { exact: true });
+  const freeze = view.getByRole('button', { name: 'Freeze spectrum' });
+  await expect(axis).toBeVisible();
+  await mode.getByRole('radio', { name: 'Off' }).click();
+  await expect(axis).toBeHidden();
+  await expect(freeze).toBeDisabled();
+  await mode.getByRole('radio', { name: 'Pre', exact: true }).click();
+  await freeze.click();
+  await expect(freeze).toHaveAttribute('aria-pressed', 'true');
+
+  const settings = view.getByRole('button', { name: 'Analyzer settings' });
+  await settings.click();
+  const popover = page.getByRole('dialog', { name: 'Analyzer settings' });
+  const floor = popover.getByRole('radio', { name: '−120' });
+  await floor.click();
+  await expect(floor).toBeChecked();
+  await page.keyboard.press('Escape');
+  await expect(popover).toBeHidden();
+  await expect(settings).toBeFocused();
+  await expect(axis).toBeVisible();
+
+  const range = view.getByRole('combobox', { name: 'Response display range' });
+  await expect(range).toBeVisible();
+  await range.click();
+  await page.getByRole('menuitem', { name: '±24 dB' }).click();
+  await expect(range).toContainText('±24 dB');
+});
+
+test('simulated output clips and each clip indicator can be cleared', async ({ page }) => {
+  const channel = 'Output level, channel 1';
+  await expect(page.getByRole('progressbar', { name: channel })).toBeVisible();
+  const reset = page.getByRole('button', { name: `Reset ${channel} clip indicator` });
+  const gain = page.getByRole('slider', { name: 'Output gain', exact: true });
+  await gain.dblclick();
+  const entry = page.locator('input:focus');
+  await entry.fill('24');
+  await entry.press('Enter');
+  await expect(reset).toHaveAttribute('aria-pressed', 'true');
+  await gain.dblclick();
+  await entry.fill('0');
+  await entry.press('Enter');
+  await reset.click();
+  await expect(reset).toHaveAttribute('aria-pressed', 'false');
+});

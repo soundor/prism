@@ -1,11 +1,20 @@
 import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
-import { createRef, useCallback, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  createRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
 import type { PointerEvent, UiNode } from 'soundor:ui';
 
+import type { Simulation } from '../analyzer/simulation';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
 import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
@@ -40,7 +49,7 @@ const BYPASSED_OPACITY = 0.35;
 // response, and the band markers on top, which are dragged to edit the
 // bands. A double-click on the graph adds a band; a drag on it selects the
 // markers in a rectangle.
-export function Graph() {
+export function Graph({ simulation }: { simulation: Simulation }) {
   const theme = useTheme();
   const bands = useBands();
   const selection = useSelection();
@@ -49,12 +58,16 @@ export function Graph() {
   const analyzerMode = useStateValue(state.analyzerMode);
   const spectrogram = useStateValue(state.showSpectrogram);
   const floor = useStateValue(state.analyzerFloor);
+  const peakHold = useStateValue(state.analyzerPeakHold);
 
   const responses = useResponses(bands);
+  useEffect(() => simulation.setResponse(responses.combined), [simulation, responses.combined]);
   const soloed = bands.find((band) => band.solo);
   const soloing = soloed !== undefined;
   const limit = rangeDecibels[range];
   const analyzerAxis = analyzerMode !== 'off' || spectrogram;
+  const showPre = analyzerAxis && !spectrogram && (bypassed || analyzerMode !== 'post');
+  const showPost = analyzerAxis && !spectrogram && !bypassed && analyzerMode !== 'pre';
   const fade = bypassed ? BYPASSED_OPACITY : 1;
 
   const [hovered, setHovered] = useState<number | null>(null);
@@ -111,7 +124,44 @@ export function Graph() {
             format={formatSigned}
             hidden={!analyzerAxis}
           />
+          {showPost && (
+            <Plot.Area
+              source={simulation.post}
+              yAxis="analyzer"
+              color={theme.color.displayText}
+              opacity={0.12}
+              hideInReadout
+            />
+          )}
           <Plot.Grid />
+          {showPre && (
+            <Plot.Line
+              source={simulation.pre}
+              yAxis="analyzer"
+              color={theme.color.displayMuted}
+              opacity={0.64}
+              hideInReadout
+            />
+          )}
+          {showPost && (
+            <Plot.Line
+              source={simulation.post}
+              yAxis="analyzer"
+              color={theme.color.displayText}
+              opacity={0.5}
+              hideInReadout
+            />
+          )}
+          {showPost && peakHold && (
+            <Plot.Line
+              source={simulation.peak}
+              yAxis="analyzer"
+              color={theme.color.displayText}
+              opacity={0.4}
+              dash={[3, 3]}
+              hideInReadout
+            />
+          )}
           <Plot.HorizontalLine value={0} color={theme.color.displayAxis} />
 
           {bands.map((band) => (
