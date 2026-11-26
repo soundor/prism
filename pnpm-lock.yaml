@@ -179,8 +179,8 @@ importers:
   apps/plugin:
     dependencies:
       '@soundor/components':
-        specifier: 0.4.0
-        version: 0.4.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
+        specifier: 0.5.0
+        version: 0.5.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
       '@soundor/react':
         specifier: 0.21.0
         version: 0.21.0(react@19.3.1)
@@ -1178,8 +1178,8 @@ packages:
   '@shikijs/vscode-textmate@10.1.0':
     resolution: {integrity: sha512-cVBuhDQjBZaNMTwBquYfPydrUP+E3hE6oYGasx8h6ZrODIM7/r+gxLDXdd66oszbrggZHEntdE6j+5gYIVyMWQ==}
 
-  '@soundor/components@0.4.0':
-    resolution: {integrity: sha512-IxKVoWJKkCQcnpEii1gXFtM3tZbmWyh2T6t1OumCq5JWcdaqDvN0CaVe91BFECbBwIk5FfIMxhPbc6IkaXr+0w==}
+  '@soundor/components@0.5.0':
+    resolution: {integrity: sha512-b/g5FhEwaTILmlo/5ClW8JeK4xo8Jn9w07AcjqJ0aXHwIRvYuFljL/buQQatQv7GsuaSQtTAo74gSH+bXMFIew==}
     peerDependencies:
       '@soundor/react': ^0.21.0
       react: ^19.3.0
@@ -4047,7 +4047,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.1.0': {}
 
-  '@soundor/components@0.4.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
+  '@soundor/components@0.5.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@soundor/react': 0.21.0(react@19.3.1)
       react: 19.3.1
