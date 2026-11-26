@@ -2,12 +2,20 @@ name: Website
 on:
   workflow_dispatch:
     inputs:
+      cache:
+        description: Whether to cache the pnpm store
+        type: boolean
+        default: true
       ref:
         description: Branch, tag, or commit to deploy
         type: string
         default: main
   workflow_call:
     inputs:
+      cache:
+        description: Whether to cache the pnpm store
+        type: boolean
+        default: true
       ref:
         description: Published release tag to deploy
         type: string
@@ -30,6 +38,8 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup
+        with:
+          cache: ${{ inputs.cache }}
       - name: Verify the download assets are published
         env:
           GH_TOKEN: ${{ github.token }}

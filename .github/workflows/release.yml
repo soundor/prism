@@ -1,4 +1,10 @@
 name: Release
+
+# Release Please creates the draft. Check and package the tagged commit, then
+# attest its ZIPs, publish the draft, and deploy the website from the same tag.
+# If a run fails before publishing, rerun the failed jobs or dispatch it with
+# the draft's tag to finish it.
+
 on:
   push:
     branches: [main]
@@ -9,14 +15,15 @@ on:
         type: string
         required: true
 
-permissions: {}
-
 concurrency:
   group: prism-release
   cancel-in-progress: false
 
+permissions: {}
+
 jobs:
   release-please:
+    name: Release please
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -34,6 +41,7 @@ jobs:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
       - id: draft
+        name: Find the draft release
         if: github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,6 +54,7 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
   check:
+    name: Check
     needs: release-please
     if: needs.release-please.outputs.created == 'true'
     runs-on: ubuntu-24.04
@@ -56,6 +65,8 @@ jobs:
         with:
           ref: refs/tags/${{ needs.release-please.outputs.tag }}
       - uses: ./.github/actions/setup
+        with:
+          cache: false
       - name: Verify tag matches the plugin version
         env:
           TAG: ${{ needs.release-please.outputs.tag }}
@@ -66,13 +77,13 @@ jobs:
     name: Build (${{ matrix.platform }})
     needs: release-please
     if: needs.release-please.outputs.created == 'true'
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - { platform: linux-x86_64, os: ubuntu-24.04 }
           - { platform: windows-x64, os: windows-2025 }
-    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     steps:
@@ -80,6 +91,8 @@ jobs:
         with:
           ref: refs/tags/${{ needs.release-please.outputs.tag }}
       - uses: ./.github/actions/setup
+        with:
+          cache: false
       - id: vst3
         uses: ./.github/actions/vst3
         with:
@@ -92,10 +105,13 @@ jobs:
           retention-days: 7
 
   publish:
+    name: Publish
     needs: [release-please, check, build]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -106,16 +122,23 @@ jobs:
           pattern: vst3-*
           merge-multiple: true
           path: ${{ runner.temp }}/release
-      - name: Attach ZIPs and checksums, then publish the draft
+      - name: Checksums
         working-directory: ${{ runner.temp }}/release
         run: |
           version=${TAG#v}
-          files=("Soundor-Prism-$version-linux-x86_64.zip" "Soundor-Prism-$version-windows-x64.zip")
-          sha256sum "${files[@]}" > SHA256SUMS
-          gh release upload "$TAG" "${files[@]}" SHA256SUMS --clobber
-          gh release edit "$TAG" --draft=false --latest
+          sha256sum "Soundor-Prism-$version-"{linux-x86_64,windows-x64}.zip > SHA256SUMS
+          cat SHA256SUMS
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-checksums: ${{ runner.temp }}/release/SHA256SUMS
+      - name: Upload to the draft release
+        working-directory: ${{ runner.temp }}/release
+        run: gh release upload "$TAG" "Soundor-Prism-${TAG#v}-"{linux-x86_64,windows-x64}.zip SHA256SUMS --clobber
+      - name: Publish the release
+        run: gh release edit "$TAG" --draft=false --latest
 
   website:
+    name: Website
     needs: [release-please, publish]
     permissions:
       contents: read
@@ -123,4 +146,5 @@ jobs:
       id-token: write
     uses: ./.github/workflows/website.yml
     with:
+      cache: false
       ref: refs/tags/${{ needs.release-please.outputs.tag }}

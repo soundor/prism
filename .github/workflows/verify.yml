@@ -5,28 +5,49 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
   group: verify-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   check:
+    name: Check
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
       - run: pnpm check
+
+  # Build and package the VST3 exactly as Release does on each platform.
   vst3:
-    name: VST3 (${{ matrix.os }})
+    name: VST3 (${{ matrix.platform }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025]
-    runs-on: ${{ matrix.os }}
+        include:
+          - { platform: linux-x86_64, os: ubuntu-24.04 }
+          - { platform: windows-x64, os: windows-2025 }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup
-      - run: pnpm build:vst3
+      - uses: ./.github/actions/vst3
+        with:
+          platform: ${{ matrix.platform }}
+
+  # Require this single check in branch protection.
+  verify:
+    name: Verify
+    if: always()
+    needs: [check, vst3]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every job passed
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "$RESULTS"
+          jq -e 'all(. == "success")' <<< "$RESULTS"

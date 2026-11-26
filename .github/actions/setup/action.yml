@@ -1,5 +1,10 @@
 name: Set up Prism
 description: Install the locked pnpm dependencies and Rust toolchain
+inputs:
+  cache:
+    description: Whether to cache the pnpm store
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -10,9 +15,11 @@ runs:
     - shell: bash
       run: corepack enable && corepack install
     - id: store
+      if: ${{ inputs.cache == 'true' }}
       shell: bash
       run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+    - if: ${{ inputs.cache == 'true' }}
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: ${{ steps.store.outputs.path }}
         key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
