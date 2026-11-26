@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { buttonVariants } from 'fumadocs-ui/components/ui/button';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { AudioWaveform, Code, Download, Globe, Play, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, AudioWaveform, Code, Globe, SlidersHorizontal } from 'lucide-react';
 
 import { Downloads } from '../components/downloads';
 import { Player } from '../components/player';
@@ -47,13 +47,7 @@ function Home() {
                 href="#download"
                 className={buttonVariants({ variant: 'primary', className: 'gap-1.5 px-4 py-2.5' })}
               >
-                <Download aria-hidden className="size-4" /> Download
-              </a>
-              <a
-                href="#play"
-                className={buttonVariants({ variant: 'outline', className: 'gap-1.5 px-4 py-2.5' })}
-              >
-                <Play aria-hidden className="size-4" /> Try in browser
+                Download <ArrowRight aria-hidden className="size-4" />
               </a>
               <Link
                 to="/docs/$"
@@ -78,10 +72,13 @@ function Home() {
             aria-labelledby="download-heading"
             className="mx-auto max-w-3xl scroll-mt-20 pb-24 text-center"
           >
+            <p className="mb-2 font-mono text-xs tracking-wider text-fd-primary uppercase">
+              Download
+            </p>
             <h2 id="download-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Download Soundor Prism
+              Soundor Prism
             </h2>
-            <p className="mt-2 mb-7 text-fd-muted-foreground">
+            <p className="mt-2 mb-8 text-fd-muted-foreground">
               A VST3 equalizer for Linux and Windows.
             </p>
             <Downloads />
