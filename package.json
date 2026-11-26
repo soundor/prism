@@ -5,11 +5,12 @@
     "build": "turbo run build",
     "build:web": "turbo run build:web",
     "build:vst3": "pnpm --filter prism build:vst3",
-    "check": "pnpm format && pnpm lint && turbo run format:rust typecheck test:rust build",
+    "check": "pnpm format && pnpm lint && turbo run format:rust typecheck test test:rust build",
     "dev": "turbo run dev:web --filter=prism",
     "format": "oxfmt --check",
     "format:fix": "oxfmt",
     "lint": "oxlint --deny-warnings .",
+    "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "test:rust": "turbo run test:rust",
     "website": "turbo run dev --filter=prism-website"

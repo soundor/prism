@@ -12,9 +12,11 @@
     "doctor": "soundor doctor",
     "format:rust": "cargo fmt --manifest-path lib/Cargo.toml --check",
     "gen": "soundor gen",
+    "test": "vitest run",
     "test:e2e": "playwright test",
     "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
+    "test:watch": "vitest watch",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
   },
   "dependencies": {
     "@soundor/components": "0.5.0",
@@ -26,10 +28,14 @@
   "devDependencies": {
     "@playwright/test": "1.65.1",
     "@soundor/config": "0.21.0",
+    "@soundor/testing-library": "0.21.0",
+    "@soundor/vitest": "0.21.0",
     "@soundor/vst3-host": "0.2.3",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
     "soundor": "0.21.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vitest": "5.1.0",
+    "vitest-environment-soundor": "0.21.0"
   }
 }

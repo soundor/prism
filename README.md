@@ -20,7 +20,7 @@ Use Node 24, Corepack, and Rust via `rustup` with `rustfmt` and the `wasm32-unkn
 ```sh
 corepack enable
 pnpm install --frozen-lockfile
-pnpm check          # format, lint, types, DSP tests, and static site build
+pnpm check          # format, lint, types, UI and DSP tests, and static site build
 pnpm test:e2e       # build and test the browser plugin in Chromium
 pnpm dev            # Soundor browser runtime in development mode
 pnpm website        # run the Fumadocs website at localhost:3000
