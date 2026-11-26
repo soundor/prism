@@ -2,20 +2,26 @@ import { Link } from '@tanstack/react-router';
 
 import { repository, soundor } from '../layout-options';
 
+// The copyright starts in 2026, as recorded in LICENSE.
+const firstYear = 2026;
+const year = new Date().getFullYear();
+const years = year > firstYear ? `${firstYear}–${year}` : `${firstYear}`;
+
 const link = 'hover:text-fd-foreground focus-visible:text-fd-foreground';
 
 function Legal() {
   return (
     <div className="flex flex-col gap-2 text-xs text-fd-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-4">
       <p>
-        Prism is licensed under the{' '}
+        © <span suppressHydrationWarning>{years}</span> Dmitrii Balakin. Prism’s software is
+        released under the{' '}
         <a
           className={`underline underline-offset-2 ${link}`}
           href={`${repository}/blob/main/LICENSE`}
         >
           GNU Affero General Public License v3
         </a>
-        .
+        . Music you make with it is yours.
       </p>
       <nav aria-label="Legal" className="flex flex-wrap gap-x-4 gap-y-1">
         <a className={link} href={`${soundor}/privacy`}>
