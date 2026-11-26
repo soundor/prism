@@ -10,6 +10,7 @@ import {
 import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { ComponentProps } from 'react';
 
+import { Downloads } from '../../components/downloads';
 import { Player } from '../../components/player';
 import { PageLegal } from '../../components/site-footer';
 import { layoutOptions, soundorLink } from '../../layout-options';
@@ -46,7 +47,7 @@ function Documentation() {
         <DocsTitle>{title}</DocsTitle>
         <DocsDescription>{description}</DocsDescription>
         <DocsBody>
-          <Content components={{ ...defaultMdxComponents, Player }} />
+          <Content components={{ ...defaultMdxComponents, Downloads, Player }} />
         </DocsBody>
       </DocsPage>
     </DocsLayout>

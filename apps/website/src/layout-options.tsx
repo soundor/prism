@@ -3,8 +3,8 @@ import { ExternalLink } from 'lucide-react';
 
 import logoDark from '../../../assets/brand/svg/soundor-prism-logo-on-dark.svg?url';
 import logo from '../../../assets/brand/svg/soundor-prism-logo.svg?url';
+import { repository } from './release';
 
-export const repository = 'https://github.com/soundor/prism';
 export const soundor = 'https://soundor.dev';
 export const soundorLink = { text: 'Soundor', url: `${soundor}/`, external: true };
 

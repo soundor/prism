@@ -34,4 +34,12 @@ For local VST3 use, copy the resulting bundle into a location your host scans fo
 
 To deploy the website, select **GitHub Actions** as the source in **Settings → Pages**, then run the **Website** workflow. The **Verify** workflow checks pull requests and builds the VST3 on Linux and Windows.
 
+## Releases
+
+Like Orbit, Prism uses Release Please. Conventional commits that touch `apps/plugin` drive the release PR, which updates the plugin version and changelog. `0.0.0` means unreleased; the first release is configured to be `0.1.0`.
+
+Merging the release PR creates a draft. The **Release** workflow verifies the tag, builds the Linux x86-64 and Windows x64 ZIPs, attaches them with `SHA256SUMS`, then publishes and deploys the site from that tag. The site links directly to the matching ZIPs. If a draft needs to be finished after a failed run, rerun the failed jobs or dispatch **Release** with its tag.
+
+If using the default GitHub token, enable **Allow GitHub Actions to create and approve pull requests** in repository settings. To trigger CI on release PRs, configure a `RELEASE_PR_TOKEN` from an app or user with permission to create the PR and release.
+
 Source code is licensed under [AGPL-3.0-only](LICENSE).

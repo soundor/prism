@@ -1,13 +1,14 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { Card, Cards } from 'fumadocs-ui/components/card';
-import { buttonVariants } from 'fumadocs-ui/components/ui/button';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { ArrowRight, AudioWaveform, Code, Globe, SlidersHorizontal } from 'lucide-react';
+import { AudioWaveform, Code, Globe, SlidersHorizontal } from 'lucide-react';
 
 import { Downloads } from '../components/downloads';
+import { HeroActions } from '../components/hero-actions';
 import { Player } from '../components/player';
 import { SiteFooter } from '../components/site-footer';
 import { layoutOptions, soundor } from '../layout-options';
+import { released, version } from '../release';
 
 export const Route = createFileRoute('/')({ component: Home });
 
@@ -42,21 +43,7 @@ function Home() {
               Shape bass, mids, and treble with four fixed-frequency bands. Switch to Original to
               hear what changed.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <a
-                href="#download"
-                className={buttonVariants({ variant: 'primary', className: 'gap-1.5 px-4 py-2.5' })}
-              >
-                Download <ArrowRight aria-hidden className="size-4" />
-              </a>
-              <Link
-                to="/docs/$"
-                params={{ _splat: '' }}
-                className={buttonVariants({ variant: 'outline', className: 'px-4 py-2.5' })}
-              >
-                Read the docs
-              </Link>
-            </div>
+            <HeroActions />
           </section>
           <section id="play" aria-label="Try Prism" className="scroll-mt-20 pb-20">
             <div className="mx-auto max-w-[960px] rounded-xl shadow-2xl shadow-black/10 dark:shadow-black/40">
@@ -76,12 +63,12 @@ function Home() {
               Download
             </p>
             <h2 id="download-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Soundor Prism
+              {released ? `Soundor Prism ${version}` : 'Soundor Prism'}
             </h2>
             <p className="mt-2 mb-8 text-fd-muted-foreground">
               A VST3 equalizer for Linux and Windows.
             </p>
-            <Downloads />
+            <Downloads centered />
           </section>
           <section aria-labelledby="bands" className="mx-auto max-w-[960px] pb-24">
             <h2

@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router';
 
-import { repository, soundor } from '../layout-options';
+import { soundor } from '../layout-options';
+import { repository } from '../release';
 
 // The copyright starts in 2026, as recorded in LICENSE.
 const firstYear = 2026;
