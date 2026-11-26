@@ -10,6 +10,7 @@
     "format": "oxfmt --check",
     "format:fix": "oxfmt",
     "lint": "oxlint --deny-warnings .",
+    "test:e2e": "turbo run test:e2e",
     "test:rust": "turbo run test:rust",
     "website": "turbo run dev --filter=prism-website"
   },

@@ -10,3 +10,5 @@ apps/website/content/docs/changelog.mdx
 .source/
 .tanstack/
 routeTree.gen.ts
+apps/plugin/test-results/
+apps/plugin/playwright-report/
