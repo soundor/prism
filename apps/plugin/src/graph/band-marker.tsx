@@ -1,10 +1,22 @@
 import { Plot, type PlotMarkerState } from '@soundor/components';
 import { useTheme } from '@soundor/components/theme';
 import { Text, View } from '@soundor/react';
+import { Circle, Rect, Svg } from '@soundor/react/svg';
+import { useEffect, useRef, type RefObject } from 'react';
+import type { UiNode } from 'soundor:ui';
 
-import { channelBadges, filterTypeLabel, hasGain, hasSlope, type Band } from '../bands/catalog';
-import { bandColor, bandForeground } from './band-colors';
+import {
+  channelBadges,
+  filterTypeLabel,
+  hasGain,
+  hasQ,
+  hasSlope,
+  type Band,
+} from '../bands/catalog';
+import { beginBandsMove, setBandsField, type BandsMove } from '../bands/edit';
 import { describeBand } from '../bands/format';
+import { bandColor, bandForeground } from './band-colors';
+import { WHEEL_SETTLE_MS, wheelQ } from './editing';
 
 /**
  * The marker's box; the face is centred in it. Every size is even, so each
@@ -13,6 +25,12 @@ import { describeBand } from '../bands/format';
 const BOX = 30;
 const FACE = 18;
 const FACE_LARGE = 20;
+/**
+ * The pointer's and the focus ring's circle: the face with its ring, and no
+ * more, so the ring and the tooltip hug the marker. (The Plot's default is
+ * the radius plus 5, a 40 px circle here.)
+ */
+const HIT_RADIUS = 14;
 
 export interface BandMarkerProps {
   band: Band;
@@ -24,42 +42,152 @@ export interface BandMarkerProps {
   bypassed: boolean;
   /** In the editor's selection: a larger face with a ring. */
   selected: boolean;
+  /** The marker's node, for its tooltip. */
+  nodeRef: RefObject<UiNode | null>;
+  /** The pointer is over it, or has left it. */
+  onHover: (hovered: boolean) => void;
+  /** A drag, or a run of arrow keys, begins or ends. */
+  onDragChange: (dragging: boolean) => void;
+  /** Delete or Backspace while it has focus. */
+  onRemove: () => void;
 }
 
 /**
  * A band's numbered marker at its frequency and gain; gain-less types sit
- * on the 0 dB line. Cuts have a rounded-square face, the others a circle; a
- * bypassed band's face is hollow, and a band that is not stereo has a badge.
+ * on the 0 dB line and move across only. Cuts have a rounded-square face,
+ * the others a circle; a bypassed band's face is hollow, and a band that is
+ * not stereo has a badge.
+ *
+ * Dragging it, or its arrow keys, set frequency and gain; the wheel sets Q
+ * and a double-click puts the gain back to 0 dB. Each is one undo step.
  */
-export function BandMarker({ band, dimmed, soloed, bypassed, selected }: BandMarkerProps) {
+export function BandMarker({
+  band,
+  dimmed,
+  soloed,
+  bypassed,
+  selected,
+  nodeRef,
+  onHover,
+  onDragChange,
+  onRemove,
+}: BandMarkerProps) {
   const gain = hasGain(band.type);
+  // Begun at the first move, not at the drag's start: a drag of a group
+  // moves this band with the others, through the Plot's group handler.
+  const move = useRef<BandsMove | null>(null);
+  const wheel = useWheelQ(band);
   return (
     <Plot.Marker
+      ref={nodeRef}
+      id={String(band.slot)}
       x={band.frequency}
       y={gain ? band.gain : 0}
       label={String(band.slot)}
       radius={BOX / 2}
+      hitRadius={HIT_RADIUS}
+      // The face draws the focus ring, beside its other rings: an outline on
+      // the hit area is a separate element, which a browser can round to
+      // other pixels than the face, off its centre.
+      styles={{ root: { outlineWidth: 0 } }}
       selected={selected}
+      movement={gain ? 'both' : 'x'}
       accessibilityLabel={`Band ${band.slot}, ${filterTypeLabel(band.type)}`}
       describeValue={() => describeBand(band)}
       render={(state) => (
-        <MarkerFace band={band} state={state} dimmed={dimmed} soloed={soloed} bypassed={bypassed} />
+        <MarkerFace
+          band={band}
+          state={state}
+          dimmed={dimmed}
+          soloed={soloed}
+          bypassed={bypassed}
+          onHover={onHover}
+        />
       )}
+      onMoveStart={() => onDragChange(true)}
+      onMove={([frequency, decibels]) => {
+        move.current ??= beginBandsMove(
+          [band],
+          gain ? ['frequency', 'gain'] : ['frequency'],
+          'Move band',
+        );
+        move.current.update(() => ({ frequency, gain: decibels }));
+      }}
+      onMoveEnd={() => {
+        const edit = move.current;
+        move.current = null;
+        edit?.end();
+        onDragChange(false);
+      }}
+      onDoubleClick={() => {
+        if (gain && band.gain !== 0) setBandsField([band.slot], 'gain', 0, 'Reset gain');
+      }}
+      onWheel={wheel}
+      onRemove={onRemove}
     />
   );
 }
 
-interface MarkerFaceProps extends Omit<BandMarkerProps, 'selected'> {
+/**
+ * The wheel's handler: Q up or down a notch at a time. The notches of one
+ * turn, until the wheel rests, are one undo step.
+ */
+function useWheelQ(band: Band) {
+  const run = useRef<{ edit: BandsMove; q: number; timer: ReturnType<typeof setTimeout> } | null>(
+    null,
+  );
+  useEffect(
+    () => () => {
+      if (!run.current) return;
+      clearTimeout(run.current.timer);
+      run.current.edit.end();
+      run.current = null;
+    },
+    [band.slot],
+  );
+  return (event: { deltaY: number; shiftKey: boolean; preventDefault(): void }) => {
+    if (!hasQ(band.type, band.slope)) return;
+    event.preventDefault();
+    const current = run.current ?? {
+      edit: beginBandsMove([band], ['q'], 'Change Q'),
+      q: band.q,
+      timer: undefined as unknown as ReturnType<typeof setTimeout>,
+    };
+    run.current = current;
+    current.q = wheelQ(current.q, event.deltaY, event.shiftKey);
+    current.edit.update(() => ({ q: current.q }));
+    clearTimeout(current.timer);
+    current.timer = setTimeout(() => {
+      if (run.current !== current) return;
+      run.current = null;
+      current.edit.end();
+    }, WHEEL_SETTLE_MS);
+  };
+}
+
+interface MarkerFaceProps extends Pick<
+  BandMarkerProps,
+  'band' | 'dimmed' | 'soloed' | 'bypassed' | 'onHover'
+> {
   state: PlotMarkerState;
 }
 
-function MarkerFace({ band, state, dimmed, soloed, bypassed }: MarkerFaceProps) {
+function MarkerFace({ band, state, dimmed, soloed, bypassed, onHover }: MarkerFaceProps) {
   const theme = useTheme();
+  const hovered = state.hovered;
+  // The latest callback, so that a new one each render does not report the
+  // hover again.
+  const report = useRef(onHover);
+  report.current = onHover;
+  useEffect(() => {
+    if (!hovered) return;
+    report.current(true);
+    return () => report.current(false);
+  }, [hovered]);
   const color = bandColor(theme, band.slot);
   const ringed = state.selected || state.dragging;
   const size = ringed ? FACE_LARGE : FACE;
-  const square = hasSlope(band.type);
-  const corner = (extra: number) => (square ? 4 + extra / 3 : (size + extra) / 2);
+  const shape = { square: hasSlope(band.type), size };
   const hollow = !band.enabled;
   const badge = channelBadges[band.channel];
   return (
@@ -72,54 +200,36 @@ function MarkerFace({ band, state, dimmed, soloed, bypassed }: MarkerFaceProps) 
         opacity: dimmed || bypassed ? 0.4 : 1,
       }}
     >
-      {(state.hovered || soloed) && !ringed && (
-        <View
-          style={{
-            position: 'absolute',
-            width: size + 8,
-            height: size + 8,
-            borderRadius: corner(8),
-            backgroundColor: color,
-            opacity: 0.22,
-          }}
+      {/* The face and its rings in one drawing, so that they stay concentric:
+          as separate views, a browser at a fractional scale (125 %, 150 %)
+          rounds each one to device pixels on its own. */}
+      <Svg
+        width={ART}
+        height={ART}
+        viewBox={[0, 0, ART, ART]}
+        style={{ position: 'absolute', left: (BOX - ART) / 2, top: (BOX - ART) / 2 }}
+      >
+        {(state.hovered || soloed) && !ringed && (
+          <Outline {...shape} grow={8} fill={color} fillOpacity={0.22} />
+        )}
+        {ringed && <Outline {...shape} grow={6} stroke={theme.color.textInverse} strokeWidth={2} />}
+        {soloed && <Outline {...shape} grow={12} stroke={color} strokeWidth={1} />}
+        {state.focused && (
+          <Outline
+            {...shape}
+            grow={16}
+            stroke={theme.color.focus}
+            strokeWidth={theme.size.focusRing}
+          />
+        )}
+        <Outline
+          {...shape}
+          grow={0}
+          fill={hollow ? theme.color.display : color}
+          {...(hollow && { stroke: color, strokeWidth: 1.5 })}
         />
-      )}
-      {ringed && (
-        <View
-          style={{
-            position: 'absolute',
-            width: size + 6,
-            height: size + 6,
-            borderRadius: corner(6),
-            borderWidth: 2,
-            borderColor: theme.color.textInverse,
-          }}
-        />
-      )}
-      {soloed && (
-        <View
-          style={{
-            position: 'absolute',
-            width: size + 12,
-            height: size + 12,
-            borderRadius: corner(12),
-            borderWidth: 1,
-            borderColor: color,
-          }}
-        />
-      )}
-      <View
-        style={{
-          width: size,
-          height: size,
-          borderRadius: corner(0),
-          backgroundColor: hollow ? theme.color.display : color,
-          borderWidth: 1.5,
-          borderColor: color,
-        }}
-      />
-      {/* Over the whole box rather than inside the bordered face, so the
-          border does not offset it. */}
+      </Svg>
+      {/* Over the whole box, centred as the drawing is. */}
       <View
         style={{
           position: 'absolute',
@@ -165,5 +275,48 @@ function MarkerFace({ band, state, dimmed, soloed, bypassed }: MarkerFaceProps) 
         </View>
       )}
     </View>
+  );
+}
+
+/** The drawing's side: room around the box for the outer rings. */
+const ART = 40;
+
+/**
+ * The face's shape grown by `grow` (its outer size), centred in the
+ * drawing: a circle, or a rounded square for a cut. A stroke is drawn
+ * inside that outer size.
+ */
+function Outline({
+  square,
+  size,
+  grow,
+  fill = 'none',
+  fillOpacity,
+  stroke,
+  strokeWidth = 0,
+}: {
+  square: boolean;
+  size: number;
+  grow: number;
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeWidth?: number;
+}) {
+  const outer = size + grow;
+  const extent = outer - strokeWidth;
+  const paint = { fill, fillOpacity, stroke, strokeWidth: stroke ? strokeWidth : undefined };
+  if (!square) return <Circle cx={ART / 2} cy={ART / 2} r={extent / 2} {...paint} />;
+  const corner = 4 + grow / 3 - strokeWidth / 2;
+  return (
+    <Rect
+      x={(ART - extent) / 2}
+      y={(ART - extent) / 2}
+      width={extent}
+      height={extent}
+      rx={corner}
+      ry={corner}
+      {...paint}
+    />
   );
 }
