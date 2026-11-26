@@ -90,3 +90,39 @@ export const bandParameterId = (slot: number, field: BandField) =>
 
 /** Slot numbers, 1 to MAX_BANDS. */
 export const bandSlots = Array.from({ length: MAX_BANDS }, (_, i) => i + 1);
+
+/** One slot's band: its number (1 to MAX_BANDS) and settings. */
+export interface Band extends BandSettings {
+  slot: number;
+}
+
+/** Bell and shelves boost and cut; the other types sit on the 0 dB line. */
+export const hasGain = (type: FilterType) =>
+  type === 'bell' || type === 'lowShelf' || type === 'highShelf';
+
+/** Cuts have a slope, and a rounded-square marker. */
+export const hasSlope = (type: FilterType) => type === 'lowCut' || type === 'highCut';
+
+/** Every type uses Q but a 6 dB/oct cut, a first-order section. */
+export const hasQ = (type: FilterType, slope: Slope) => !(hasSlope(type) && slope === 'db6');
+
+/** dB per octave for each slope. */
+export const slopeDecibels: Record<Slope, number> = {
+  db6: 6,
+  db12: 12,
+  db24: 24,
+  db36: 36,
+  db48: 48,
+};
+
+/** The badge on a marker that is not stereo. */
+export const channelBadges: Record<Channel, string | null> = {
+  stereo: null,
+  left: 'L',
+  right: 'R',
+  mid: 'M',
+  side: 'S',
+};
+
+export const filterTypeLabel = (type: FilterType) =>
+  filterTypes.find((option) => option.value === type)!.label;

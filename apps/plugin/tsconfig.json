@@ -12,5 +12,6 @@
     "noEmit": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", ".soundor/generated/soundor.d.ts"]
+  "include": ["src", ".soundor/generated/soundor.d.ts"],
+  "exclude": ["src/**/__tests__"]
 }

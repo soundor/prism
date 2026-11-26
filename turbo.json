@@ -5,6 +5,7 @@
     "gen": { "cache": false },
     "format:rust": { "dependsOn": ["gen"] },
     "typecheck": { "dependsOn": ["gen"] },
+    "test": { "dependsOn": ["gen"] },
     "test:rust": { "dependsOn": ["gen"] },
     "build:web": {
       "dependsOn": ["gen"],

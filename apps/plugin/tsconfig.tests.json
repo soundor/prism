@@ -1,0 +1,18 @@
+{
+  // The integration tests: the plugin's UI in Soundor's simulated runtime,
+  // run by Vitest in Node.
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "customConditions": ["soundor"],
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src", "vitest.config.ts", ".soundor/generated/soundor.d.ts"]
+}
