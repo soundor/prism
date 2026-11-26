@@ -12,6 +12,11 @@
       "outputs": [".soundor/dist/web/**"]
     },
     "dev:web": { "dependsOn": ["gen"], "cache": false, "persistent": true },
+    "test:e2e": {
+      "dependsOn": ["build:web"],
+      "passThroughEnv": ["CI", "PLAYWRIGHT_BROWSERS_PATH"],
+      "cache": false
+    },
     "prism-website#build": {
       "dependsOn": ["prism#build:web"],
       "env": ["PRISM_SITE_BASE", "VITE_PRISM_SITE_ORIGIN"],

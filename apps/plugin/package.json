@@ -12,6 +12,7 @@
     "doctor": "soundor doctor",
     "format:rust": "cargo fmt --manifest-path lib/Cargo.toml --check",
     "gen": "soundor gen",
+    "test:e2e": "playwright test",
     "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.web.json"
   },
@@ -23,6 +24,7 @@
     "react": "19.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.65.1",
     "@soundor/config": "0.21.0",
     "@soundor/vst3-host": "0.2.3",
     "@types/react": "19.3.0",

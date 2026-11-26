@@ -38,11 +38,24 @@ jobs:
         with:
           platform: ${{ matrix.platform }}
 
+  browser:
+    name: Browser (e2e)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm --filter prism exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+
   # Require this single check in branch protection.
   verify:
     name: Verify
     if: always()
-    needs: [check, vst3]
+    needs: [check, vst3, browser]
     runs-on: ubuntu-24.04
     steps:
       - name: Every job passed
