@@ -22,14 +22,14 @@ corepack enable
 pnpm install --frozen-lockfile
 pnpm check          # format, lint, types, DSP tests, and static site build
 pnpm dev            # Soundor browser runtime in development mode
-pnpm website        # build and preview the landing page at localhost:4173
+pnpm website        # run the Fumadocs website at localhost:3000
 pnpm build:vst3     # apps/plugin/.soundor/dist/vst3/Soundor Prism.vst3
 ```
 
 For local VST3 use, copy the resulting bundle into a location your host scans for VST3 plugins, then rescan. For the browser demo, press Play for the included synth loop or select Audio file to play a local file.
 
 - `apps/plugin`: Soundor configuration, React editor, Rust DSP, and demo input.
-- `apps/website`: static landing page and browser demo. `pnpm build` writes the site to `apps/website/dist`.
+- `apps/website`: Fumadocs on TanStack Start, with a landing page, searchable MDX docs in `content/docs`, and the browser demo. `pnpm build` prerenders the site to `apps/website/dist/client`.
 - `assets/brand`: supplied artwork and usage notes. Use either social preview image as the repository's GitHub social card.
 
 To deploy the website, select **GitHub Actions** as the source in **Settings → Pages**, then run the **Website** workflow. The **Verify** workflow checks pull requests and builds the VST3 on Linux and Windows.

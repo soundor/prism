@@ -4,3 +4,5 @@ packages:
 engineStrict: true
 autoInstallPeers: false
 strictPeerDependencies: true
+allowBuilds:
+  esbuild: false

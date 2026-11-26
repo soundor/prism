@@ -1,0 +1,23 @@
+---
+title: Build from source
+description: Build the Prism VST3 or run its website locally.
+---
+
+## Prerequisites
+
+Install Node 24 with Corepack, and Rust with `rustup`. The plugin toolchain file requests stable Rust, `rustfmt` and the WebAssembly target. CI builds the VST3 for Linux x86-64 and Windows x64.
+
+```sh
+git clone https://github.com/soundor/prism.git
+cd prism
+corepack enable
+pnpm install --frozen-lockfile
+```
+
+## VST3
+
+Run `pnpm build:vst3`. Copy `apps/plugin/.soundor/dist/vst3/Soundor Prism.vst3` to a location your host scans for VST3 plugins, then rescan.
+
+## Website
+
+Run `pnpm website` to open the site and demo on `http://localhost:3000`. Run `pnpm check` for format, lint, type, DSP, and site build checks. `pnpm build` prerenders the Fumadocs site and copies the playable web build into `apps/website/dist/client`.

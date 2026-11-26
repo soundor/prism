@@ -5,3 +5,7 @@ dist/
 target/
 *.tsbuildinfo
 .DS_Store
+apps/website/public/
+.source/
+.tanstack/
+routeTree.gen.ts

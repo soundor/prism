@@ -13,11 +13,12 @@
     "dev:web": { "dependsOn": ["gen"], "cache": false, "persistent": true },
     "prism-website#build": {
       "dependsOn": ["prism#build:web"],
+      "env": ["PRISM_SITE_BASE", "VITE_PRISM_SITE_ORIGIN"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/assets/brand/**"],
       "outputs": ["dist/**"]
     },
     "prism-website#dev": {
-      "dependsOn": ["prism-website#build"],
+      "dependsOn": ["prism#build:web"],
       "cache": false,
       "persistent": true
     }
