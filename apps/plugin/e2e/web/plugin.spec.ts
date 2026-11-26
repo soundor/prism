@@ -117,3 +117,53 @@ test('global bypass takes precedence over solo and leaves marker actions availab
   await bypass.click();
   await expect(page.getByText('SOLO · BAND 1', { exact: true })).toBeVisible();
 });
+
+test('the header browses factory presets, tracks edits, and supports undo and redo', async ({
+  page,
+}) => {
+  const toolbar = header(page);
+  const preset = toolbar.getByRole('button', { name: /^Preset menu:/ });
+  await expect(preset).toHaveAccessibleName('Preset menu: Init');
+  await expect(toolbar.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled();
+  await toolbar.getByRole('button', { name: 'Previous preset' }).click();
+  await expect(preset).toHaveAccessibleName('Preset menu: Rumble Cleanup');
+  await toolbar.getByRole('button', { name: 'Next preset' }).click();
+  await expect(preset).toHaveAccessibleName('Preset menu: Init');
+  await preset.click();
+  await page.getByRole('menuitem', { name: 'Vocal Presence' }).click();
+  await expect(preset).toHaveAccessibleName('Preset menu: Vocal Presence');
+  await expect(marker(page, 'Band 1, Low cut')).toBeVisible();
+  const add = page.getByRole('button', { name: 'Add band' });
+  await add.click();
+  await expect(preset).toHaveAccessibleName('Preset menu: Vocal Presence, modified');
+  await add.press('Control+z');
+  await expect(preset).toHaveAccessibleName('Preset menu: Vocal Presence');
+  await toolbar.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(preset).toHaveAccessibleName('Preset menu: Vocal Presence, modified');
+});
+
+test('B starts from defaults, keeps its edits independently, and can be copied to A', async ({
+  page,
+}) => {
+  const toolbar = header(page);
+  const a = toolbar.getByRole('radio', { name: 'A', exact: true });
+  const b = toolbar.getByRole('radio', { name: 'B', exact: true });
+  await toolbar.getByRole('button', { name: 'Next preset' }).click();
+  const lowCut = marker(page, 'Band 1, Low cut');
+  const bell = marker(page, 'Band 1, Bell');
+  await expect(lowCut).toBeVisible();
+
+  await b.click();
+  await expect(lowCut).toBeHidden();
+  await page.getByRole('button', { name: 'Add band' }).click();
+  await expect(bell).toBeVisible();
+  await a.click();
+  await expect(lowCut).toBeVisible();
+  await b.click();
+  await expect(bell).toBeVisible();
+
+  await toolbar.getByRole('button', { name: 'Copy B to A' }).click();
+  await a.click();
+  await expect(bell).toBeVisible();
+  await expect(lowCut).toBeHidden();
+});

@@ -7,7 +7,7 @@ import { bandFields, bandSlots, type Band } from './catalog';
 // the store subscribes to every parameter and rebuilds its snapshot only after
 // a change, so readers of an unchanged list get the same array.
 
-function readSlot(slot: number): Band {
+export function readSlot(slot: number): Band {
   const band: Record<string, unknown> = { slot };
   for (const field of bandFields) band[field] = bandParameter(slot, field).get();
   return band as unknown as Band;
@@ -57,6 +57,10 @@ export function getAllBands(): readonly Band[] {
 
 /** The bands in use (active slots), in slot order, re-rendering on any change. */
 export function useBands(): readonly Band[] {
-  const all = useSyncExternalStore(subscribe, getAllBands);
+  const all = useAllBands();
   return useMemo(() => all.filter((band) => band.active), [all]);
+}
+
+export function useAllBands(): readonly Band[] {
+  return useSyncExternalStore(subscribe, getAllBands);
 }
