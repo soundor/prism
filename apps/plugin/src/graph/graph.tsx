@@ -1,13 +1,15 @@
-import { Plot } from '@soundor/components';
+import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
-import { useMemo } from 'react';
+import { createRef, useCallback, useMemo, useRef, useState, type RefObject } from 'react';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
+import type { PointerEvent, UiNode } from 'soundor:ui';
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
-import { useSelection } from '../bands/selection';
+import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
+import { selectedSlots, setSelection, useSelection } from '../bands/selection';
 import { useBands } from '../bands/use-bands';
 import {
   analyzerTicks,
@@ -20,6 +22,9 @@ import {
 } from './axes';
 import { bandColor } from './band-colors';
 import { BandMarker } from './band-marker';
+import { bandAt, moveGroup } from './editing';
+import { BandTooltip, EmptyHint, Readout } from './overlays';
+import { altStore, pointerStore, trackModifiers, useStore } from './pointer';
 import { bandResponse, combine, GRID_POINTS, toPoints, type Response } from './response';
 
 /**
@@ -32,7 +37,9 @@ const PLOT_OFFSET = 20;
 const BYPASSED_OPACITY = 0.35;
 
 // The equalizer graph: grid and axes, each band's response, the combined
-// response, and the band markers on top.
+// response, and the band markers on top, which are dragged to edit the
+// bands. A double-click on the graph adds a band; a drag on it selects the
+// markers in a rectangle.
 export function Graph() {
   const theme = useTheme();
   const bands = useBands();
@@ -49,6 +56,17 @@ export function Graph() {
   const analyzerAxis = analyzerMode !== 'off' || spectrogram;
   const fade = bypassed ? BYPASSED_OPACITY : 1;
 
+  const [hovered, setHovered] = useState<number | null>(null);
+  const [dragging, setDragging] = useState<number | null>(null);
+  const markerRefs = useMarkerRefs();
+  const selectionProps = usePlotSelection(bands, limit);
+  // A drag shows its band's values. Otherwise both readings, a marker's
+  // tooltip and the cursor readout, show only while Alt is held, so that
+  // moving over the graph does not cover it.
+  const alt = useStore(altStore);
+  const shown = dragging ?? (alt ? hovered : null);
+  const shownBand = bands.find((band) => band.slot === shown);
+
   return (
     <View
       style={{
@@ -59,12 +77,22 @@ export function Graph() {
         overflow: 'hidden',
       }}
     >
-      <View style={{ position: 'absolute', left: 0, top: PLOT_OFFSET }}>
+      <View
+        style={{ position: 'absolute', left: 0, top: PLOT_OFFSET }}
+        onPointerMoveCapture={trackPointer}
+        onPointerDownCapture={trackPointer}
+        onPointerLeave={() => {
+          pointerStore.set(null);
+          altStore.set(false);
+        }}
+      >
         <Plot
           width={GRAPH_WIDTH}
           height={GRAPH_HEIGHT - PLOT_OFFSET}
           accessibilityLabel="Equalizer response and bands"
           styles={{ root: { backgroundColor: theme.color.display, borderRadius: 0 } }}
+          selection={selectionProps}
+          onBackgroundDoubleClick={({ data: [hz, db] }) => addBand(bands, bandAt(hz, db))}
         >
           <Plot.XAxis
             domain={[FREQUENCY_MIN, FREQUENCY_MAX]}
@@ -118,6 +146,14 @@ export function Graph() {
             </>
           )}
 
+          {dragging !== null && shownBand && (
+            <Plot.VerticalLine
+              value={shownBand.frequency}
+              color={bandColor(theme, shownBand.slot)}
+              dash={[2, 4]}
+            />
+          )}
+
           {bands.map((band) => (
             <BandMarker
               key={band.slot}
@@ -126,13 +162,98 @@ export function Graph() {
               dimmed={soloing && !band.solo}
               bypassed={bypassed}
               selected={selection.some((s) => s.slot === band.slot)}
+              nodeRef={markerRefs(band.slot)}
+              onHover={(on) =>
+                setHovered((current) => (on ? band.slot : current === band.slot ? null : current))
+              }
+              onDragChange={(on) =>
+                setDragging((current) => (on ? band.slot : current === band.slot ? null : current))
+              }
+              onRemove={() => {
+                const slots = selectedSlots();
+                deleteBands(slots.includes(band.slot) ? slots : [band.slot]);
+              }}
             />
           ))}
+
+          {bands.length === 0 && <EmptyHint />}
+          <Readout hidden={!alt || shown !== null} />
         </Plot>
       </View>
+      {shownBand && (
+        <BandTooltip
+          band={shownBand}
+          anchor={markerRefs(shownBand.slot)}
+          dragging={dragging !== null}
+        />
+      )}
       <UnitLabels analyzer={analyzerAxis} />
     </View>
   );
+}
+
+/** Keeps the pointer's place, in the Plot's pixels, and whether Shift is held. */
+function trackPointer(event: PointerEvent) {
+  trackModifiers(event);
+  let box;
+  try {
+    box = event.currentTarget?.getBoundingClientRect();
+  } catch {
+    // No layout to measure against, as in the simulated runtime of the tests.
+    return;
+  }
+  pointerStore.set([event.pageX - (box?.x ?? 0), event.pageY - (box?.y ?? 0)]);
+}
+
+/** One ref per slot, kept across renders, for the tooltip's anchor. */
+function useMarkerRefs() {
+  const refs = useRef(new Map<number, RefObject<UiNode | null>>());
+  return useCallback((slot: number) => {
+    let ref = refs.current.get(slot);
+    if (!ref) {
+      ref = createRef<UiNode>();
+      refs.current.set(slot, ref);
+    }
+    return ref;
+  }, []);
+}
+
+/**
+ * The Plot's side of the selection: a marker click selects, Shift adds and
+ * Ctrl or Cmd toggles; a drag on the background selects a rectangle; a drag
+ * of a selected marker moves all the selected bands, as one undo step.
+ */
+function usePlotSelection(bands: readonly Band[], gainLimit: number): PlotSelection {
+  const selection = useSelection();
+  const group = useRef<{ bands: readonly Band[]; edit: BandsMove } | null>(null);
+  const onGroupDrag = (event: PlotGroupDrag) => {
+    if (event.phase === 'start') {
+      const members = bands.filter((band) => event.ids.includes(String(band.slot)));
+      group.current = {
+        bands: members,
+        edit: beginBandsMove(members, ['frequency', 'gain'], 'Move bands'),
+      };
+      return;
+    }
+    const active = group.current;
+    if (!active) return;
+    if (event.phase === 'move') {
+      const { x, y } = event.coordinates;
+      const moved = moveGroup(active.bands, event.delta, x, y, gainLimit);
+      active.edit.update((band) => moved.get(band.slot)!);
+      return;
+    }
+    group.current = null;
+    if (event.phase === 'cancel') active.edit.restore();
+    active.edit.end();
+  };
+  return {
+    selectedIds: selection.map((band) => String(band.slot)),
+    onSelectionChange: (ids) => setSelection(ids.map(Number)),
+    multiple: true,
+    rectangle: true,
+    onGroupDrag,
+  };
 }
 
 /** A band's own curve: faint beside the combined one, fainter when off or out of a solo. */

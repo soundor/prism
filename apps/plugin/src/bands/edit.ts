@@ -64,38 +64,71 @@ function writeSlot(slot: number, settings: BandSettings) {
   for (const field of bandFields) bandParameter(slot, field).set(settings[field]);
 }
 
-type ContinuousField = 'frequency' | 'gain' | 'q';
+export type ContinuousField = 'frequency' | 'gain' | 'q';
+
+/** A band's continuous settings, or some of them. */
+export type ContinuousValues = Partial<Record<ContinuousField, number>>;
 
 /**
- * A drag or a typed value applied to several bands, each from its own
- * starting value: one undo step at the end, labelled `label`.
+ * A drag, a wheel run or a typed value applied to several bands, each from
+ * its own starting values: one undo step at the end, labelled `label`.
  *
  * Parameter gestures can each record their own undo step only, so the edit
  * runs inside plain gestures (which tell the host a control is held) and,
  * at the end, is put back and applied again as one transaction.
  */
-export function beginBandsEdit(bands: readonly Band[], field: ContinuousField, label: string) {
-  const parameters = bands.map((band) => bandParameter(band.slot, field));
-  const start = bands.map((band) => band[field]);
-  for (const parameter of parameters) parameter.beginGesture();
+export function beginBandsMove(
+  bands: readonly Band[],
+  fields: readonly ContinuousField[],
+  label: string,
+) {
+  const held = bands.flatMap((band) =>
+    fields.map((field) => ({ slot: band.slot, field, parameter: bandParameter(band.slot, field) })),
+  );
+  const start = held.map(({ parameter }) => parameter.get());
+  const starts = new Map(bands.map((band) => [band.slot, band]));
+  for (const { parameter } of held) parameter.beginGesture();
+  let ended = false;
   return {
-    /** Sets each band to what `next` gives for its starting value. */
-    update(next: (start: number) => number) {
-      parameters.forEach((parameter, i) => parameter.set(next(start[i]!)));
+    /** Sets each band to what `next` gives for its starting settings; fields it leaves out keep theirs. */
+    update(next: (start: Band) => ContinuousValues) {
+      const values = new Map(bands.map((band) => [band.slot, next(starts.get(band.slot)!)]));
+      held.forEach(({ slot, field, parameter }, i) => {
+        parameter.set(values.get(slot)![field] ?? start[i]!);
+      });
+    },
+    /** Puts every band back as it was. */
+    restore() {
+      held.forEach(({ parameter }, i) => parameter.set(start[i]!));
     },
     end() {
+      if (ended) return;
+      ended = true;
       try {
-        const final = parameters.map((parameter) => parameter.get());
+        const final = held.map(({ parameter }) => parameter.get());
         if (final.some((value, i) => value !== start[i])) {
-          parameters.forEach((parameter, i) => parameter.set(start[i]!));
+          held.forEach(({ parameter }, i) => parameter.set(start[i]!));
           history.transaction(label, () => {
-            parameters.forEach((parameter, i) => parameter.set(final[i]!));
+            held.forEach(({ parameter }, i) => parameter.set(final[i]!));
           });
         }
       } finally {
-        for (const parameter of parameters) parameter.endGesture();
+        for (const { parameter } of held) parameter.endGesture();
       }
     },
+  };
+}
+
+export type BandsMove = ReturnType<typeof beginBandsMove>;
+
+/** `beginBandsMove` for one field, given and returning plain numbers. */
+export function beginBandsEdit(bands: readonly Band[], field: ContinuousField, label: string) {
+  const move = beginBandsMove(bands, [field], label);
+  return {
+    update(next: (start: number) => number) {
+      move.update((band) => ({ [field]: next(band[field]) }));
+    },
+    end: move.end,
   };
 }
 

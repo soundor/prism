@@ -40,3 +40,14 @@ export function describeBand(band: BandSettings): string {
   if (band.solo) parts.push('solo');
   return parts.join(', ');
 }
+
+const noteNames = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+
+/** The nearest equal-tempered note (A4 = 440 Hz) and how far off it is: "A4", "C♯3 +12¢", "E2 −30¢". */
+export function formatNote(hz: number): string {
+  const midi = 69 + 12 * Math.log2(hz / 440);
+  const nearest = Math.round(midi);
+  const cents = Math.round((midi - nearest) * 100);
+  const name = `${noteNames[((nearest % 12) + 12) % 12]}${Math.floor(nearest / 12) - 1}`;
+  return cents === 0 ? name : `${name} ${cents > 0 ? '+' : '−'}${Math.abs(cents)}¢`;
+}
