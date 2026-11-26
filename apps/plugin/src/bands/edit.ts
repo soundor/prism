@@ -5,6 +5,7 @@ import {
   bandFields,
   bandSlots,
   defaultBand,
+  FREQUENCY_MAX,
   type Band,
   type BandField,
   type BandSettings,
@@ -38,10 +39,33 @@ export function addBand(
   bands: readonly Band[],
   settings: Partial<BandSettings> = {},
 ): number | null {
+  return insertBand(bands, settings, 'Add band');
+}
+
+/** Copy the filter into a free slot, offset so its marker can be picked separately. */
+export function duplicateBand(bands: readonly Band[], band: Band): number | null {
+  const { enabled, type, frequency, gain, q, slope, channel } = band;
+  const shifted = frequency * 1.25;
+  return insertBand(
+    bands,
+    {
+      enabled,
+      type,
+      frequency: shifted <= FREQUENCY_MAX ? shifted : frequency / 1.25,
+      gain,
+      q,
+      slope,
+      channel,
+    },
+    'Duplicate band',
+  );
+}
+
+function insertBand(bands: readonly Band[], settings: Partial<BandSettings>, label: string) {
   const slot = freeSlot(bands);
   if (slot === null) return null;
   const band = { ...defaultBand, ...settings, active: true };
-  history.transaction('Add band', () => writeSlot(slot, band));
+  history.transaction(label, () => writeSlot(slot, band));
   selectOnly(slot);
   return slot;
 }

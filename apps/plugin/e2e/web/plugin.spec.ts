@@ -65,3 +65,55 @@ test('the synth loop keeps playing through bypass', async ({ page }) => {
   await pause.click();
   await expect(host.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
 });
+
+// The inspector strip also exposes the band's name, as a list option.
+const marker = (page: Page, name: string) =>
+  page.getByLabel(name, { exact: true }).and(page.locator(':not([role="option"])'));
+
+test('marker actions open at a secondary click and the filter submenu works from the keyboard', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Add band' }).click();
+  const bell = marker(page, 'Band 1, Bell');
+  const menu = page.getByRole('menu', { name: 'Band 1 actions' });
+
+  await bell.click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: 'Bypass band' }).click();
+  await expect(menu).toBeHidden();
+
+  await bell.focus();
+  await bell.press('Shift+F10');
+  await expect(menu.getByRole('menuitem', { name: 'Enable band' })).toBeFocused();
+  const filterTypes = menu.getByRole('menuitem', { name: 'Filter type' });
+  await filterTypes.focus();
+  await filterTypes.press('ArrowRight');
+  const submenu = page.getByRole('menu', { name: 'Filter type' });
+  await expect(submenu.getByText('Bell', { exact: true })).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(marker(page, 'Band 1, Low shelf')).toBeFocused();
+  await expect(menu).toBeHidden();
+});
+
+test('global bypass takes precedence over solo and leaves marker actions available', async ({
+  page,
+}) => {
+  const bypass = header(page).getByRole('button', { name: 'Global bypass' });
+  await page.getByRole('button', { name: 'Add band' }).click();
+  const first = marker(page, 'Band 1, Bell');
+  const menu = page.getByRole('menu', { name: 'Band 1 actions' });
+  await first.click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: 'Solo band' }).click();
+  await expect(page.getByText('SOLO · BAND 1', { exact: true })).toBeVisible();
+
+  await bypass.click();
+  await expect(bypass).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('BYPASSED', { exact: true })).toBeVisible();
+  await expect(page.getByText('SOLO · BAND 1', { exact: true })).toBeHidden();
+
+  await first.click({ button: 'right' });
+  await menu.getByRole('menuitem', { name: 'Duplicate' }).click();
+  await expect(marker(page, 'Band 2, Bell')).toBeVisible();
+  await bypass.click();
+  await expect(page.getByText('SOLO · BAND 1', { exact: true })).toBeVisible();
+});

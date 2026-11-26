@@ -118,6 +118,42 @@ export function BandTooltip({
   );
 }
 
+/** The graph stays editable while bypassed or soloed. */
+export function GraphStatus({ label, color }: { label: string; color: string }) {
+  const theme = useTheme();
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: 16,
+        alignItems: 'center',
+        pointerEvents: 'none',
+      }}
+    >
+      <View
+        style={{
+          height: 22,
+          paddingHorizontal: 10,
+          justifyContent: 'center',
+          borderRadius: theme.radius.radiusSm,
+          borderWidth: theme.size.borderHairline,
+          borderColor: color,
+          backgroundColor: theme.color.display,
+        }}
+      >
+        <Text
+          accessibilityLabel={label}
+          style={[textStyle(theme, 'technical', color), { letterSpacing: 1.8 }]}
+        >
+          {label.toUpperCase()}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 /** On a graph with no bands, how to add one. */
 export function EmptyHint() {
   const theme = useTheme();

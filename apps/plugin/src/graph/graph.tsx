@@ -9,7 +9,7 @@ import type { PointerEvent, UiNode } from 'soundor:ui';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
 import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
-import { selectedSlots, setSelection, useSelection } from '../bands/selection';
+import { setSelection, useSelection } from '../bands/selection';
 import { useBands } from '../bands/use-bands';
 import {
   analyzerTicks,
@@ -23,7 +23,7 @@ import {
 import { bandColor } from './band-colors';
 import { BandMarker } from './band-marker';
 import { bandAt, moveGroup } from './editing';
-import { BandTooltip, EmptyHint, Readout } from './overlays';
+import { BandTooltip, EmptyHint, GraphStatus, Readout } from './overlays';
 import { altStore, pointerStore, trackModifiers, useStore } from './pointer';
 import { bandResponse, combine, GRID_POINTS, toPoints, type Response } from './response';
 
@@ -51,7 +51,8 @@ export function Graph() {
   const floor = useStateValue(state.analyzerFloor);
 
   const responses = useResponses(bands);
-  const soloing = bands.some((band) => band.solo);
+  const soloed = bands.find((band) => band.solo);
+  const soloing = soloed !== undefined;
   const limit = rangeDecibels[range];
   const analyzerAxis = analyzerMode !== 'off' || spectrogram;
   const fade = bypassed ? BYPASSED_OPACITY : 1;
@@ -154,27 +155,33 @@ export function Graph() {
             />
           )}
 
-          {bands.map((band) => (
-            <BandMarker
-              key={band.slot}
-              band={band}
-              soloed={band.solo}
-              dimmed={soloing && !band.solo}
-              bypassed={bypassed}
-              selected={selection.some((s) => s.slot === band.slot)}
-              nodeRef={markerRefs(band.slot)}
-              onHover={(on) =>
-                setHovered((current) => (on ? band.slot : current === band.slot ? null : current))
-              }
-              onDragChange={(on) =>
-                setDragging((current) => (on ? band.slot : current === band.slot ? null : current))
-              }
-              onRemove={() => {
-                const slots = selectedSlots();
-                deleteBands(slots.includes(band.slot) ? slots : [band.slot]);
-              }}
-            />
-          ))}
+          {bands.map((band) => {
+            const selected = selection.some((s) => s.slot === band.slot);
+            return (
+              <BandMarker
+                key={band.slot}
+                band={band}
+                bands={bands}
+                soloed={band.solo}
+                dimmed={soloing && !band.solo}
+                bypassed={bypassed}
+                selected={selected}
+                nodeRef={markerRefs(band.slot)}
+                onHover={(on) =>
+                  setHovered((current) => (on ? band.slot : current === band.slot ? null : current))
+                }
+                onDragChange={(on) =>
+                  setDragging((current) =>
+                    on ? band.slot : current === band.slot ? null : current,
+                  )
+                }
+                removeLabel={
+                  selected && selection.length > 1 ? 'Delete selected bands' : 'Delete band'
+                }
+                onRemove={() => deleteBands(selected ? selection.map((s) => s.slot) : [band.slot])}
+              />
+            );
+          })}
 
           {bands.length === 0 && <EmptyHint />}
           <Readout hidden={!alt || shown !== null} />
@@ -187,6 +194,11 @@ export function Graph() {
           dragging={dragging !== null}
         />
       )}
+      {bypassed ? (
+        <GraphStatus label="Bypassed" color={theme.color.displayWarning} />
+      ) : soloed ? (
+        <GraphStatus label={`Solo · Band ${soloed.slot}`} color={bandColor(theme, soloed.slot)} />
+      ) : null}
       <UnitLabels analyzer={analyzerAxis} />
     </View>
   );

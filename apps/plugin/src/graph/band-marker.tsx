@@ -1,4 +1,4 @@
-import { Plot, type PlotMarkerState } from '@soundor/components';
+import { ContextMenu, Plot, type PlotMarkerState } from '@soundor/components';
 import { useTheme } from '@soundor/components/theme';
 import { Text, View } from '@soundor/react';
 import { Circle, Rect, Svg } from '@soundor/react/svg';
@@ -16,6 +16,7 @@ import {
 import { beginBandsMove, setBandsField, type BandsMove } from '../bands/edit';
 import { describeBand } from '../bands/format';
 import { bandColor, bandForeground } from './band-colors';
+import { BandMenu } from './band-menu';
 import { WHEEL_SETTLE_MS, wheelQ } from './editing';
 
 /**
@@ -34,6 +35,7 @@ const HIT_RADIUS = 14;
 
 export interface BandMarkerProps {
   band: Band;
+  bands: readonly Band[];
   /** Another band is soloed: this one is drawn faded. */
   dimmed: boolean;
   /** This band is soloed. */
@@ -48,7 +50,8 @@ export interface BandMarkerProps {
   onHover: (hovered: boolean) => void;
   /** A drag, or a run of arrow keys, begins or ends. */
   onDragChange: (dragging: boolean) => void;
-  /** Delete or Backspace while it has focus. */
+  removeLabel: string;
+  /** Delete or Backspace while it has focus, or Delete in its menu. */
   onRemove: () => void;
 }
 
@@ -63,6 +66,7 @@ export interface BandMarkerProps {
  */
 export function BandMarker({
   band,
+  bands,
   dimmed,
   soloed,
   bypassed,
@@ -70,6 +74,7 @@ export function BandMarker({
   nodeRef,
   onHover,
   onDragChange,
+  removeLabel,
   onRemove,
 }: BandMarkerProps) {
   const gain = hasGain(band.type);
@@ -78,53 +83,58 @@ export function BandMarker({
   const move = useRef<BandsMove | null>(null);
   const wheel = useWheelQ(band);
   return (
-    <Plot.Marker
-      ref={nodeRef}
-      id={String(band.slot)}
-      x={band.frequency}
-      y={gain ? band.gain : 0}
-      label={String(band.slot)}
-      radius={BOX / 2}
-      hitRadius={HIT_RADIUS}
-      // The face draws the focus ring, beside its other rings: an outline on
-      // the hit area is a separate element, which a browser can round to
-      // other pixels than the face, off its centre.
-      styles={{ root: { outlineWidth: 0 } }}
-      selected={selected}
-      movement={gain ? 'both' : 'x'}
-      accessibilityLabel={`Band ${band.slot}, ${filterTypeLabel(band.type)}`}
-      describeValue={() => describeBand(band)}
-      render={(state) => (
-        <MarkerFace
-          band={band}
-          state={state}
-          dimmed={dimmed}
-          soloed={soloed}
-          bypassed={bypassed}
-          onHover={onHover}
+    <ContextMenu>
+      <ContextMenu.Trigger>
+        <Plot.Marker
+          ref={nodeRef}
+          id={String(band.slot)}
+          x={band.frequency}
+          y={gain ? band.gain : 0}
+          label={String(band.slot)}
+          radius={BOX / 2}
+          hitRadius={HIT_RADIUS}
+          // The face draws the focus ring, beside its other rings: an outline on
+          // the hit area is a separate element, which a browser can round to
+          // other pixels than the face, off its centre.
+          styles={{ root: { outlineWidth: 0 } }}
+          selected={selected}
+          movement={gain ? 'both' : 'x'}
+          accessibilityLabel={`Band ${band.slot}, ${filterTypeLabel(band.type)}`}
+          describeValue={() => describeBand(band)}
+          render={(state) => (
+            <MarkerFace
+              band={band}
+              state={state}
+              dimmed={dimmed}
+              soloed={soloed}
+              bypassed={bypassed}
+              onHover={onHover}
+            />
+          )}
+          onMoveStart={() => onDragChange(true)}
+          onMove={([frequency, decibels]) => {
+            move.current ??= beginBandsMove(
+              [band],
+              gain ? ['frequency', 'gain'] : ['frequency'],
+              'Move band',
+            );
+            move.current.update(() => ({ frequency, gain: decibels }));
+          }}
+          onMoveEnd={() => {
+            const edit = move.current;
+            move.current = null;
+            edit?.end();
+            onDragChange(false);
+          }}
+          onDoubleClick={() => {
+            if (gain && band.gain !== 0) setBandsField([band.slot], 'gain', 0, 'Reset gain');
+          }}
+          onWheel={wheel}
+          onRemove={onRemove}
         />
-      )}
-      onMoveStart={() => onDragChange(true)}
-      onMove={([frequency, decibels]) => {
-        move.current ??= beginBandsMove(
-          [band],
-          gain ? ['frequency', 'gain'] : ['frequency'],
-          'Move band',
-        );
-        move.current.update(() => ({ frequency, gain: decibels }));
-      }}
-      onMoveEnd={() => {
-        const edit = move.current;
-        move.current = null;
-        edit?.end();
-        onDragChange(false);
-      }}
-      onDoubleClick={() => {
-        if (gain && band.gain !== 0) setBandsField([band.slot], 'gain', 0, 'Reset gain');
-      }}
-      onWheel={wheel}
-      onRemove={onRemove}
-    />
+      </ContextMenu.Trigger>
+      <BandMenu band={band} bands={bands} removeLabel={removeLabel} onRemove={onRemove} />
+    </ContextMenu>
   );
 }
 
