@@ -181,6 +181,9 @@ importers:
       '@soundor/components':
         specifier: 0.5.0
         version: 0.5.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
+      '@soundor/icons':
+        specifier: 0.3.0
+        version: 0.3.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
       '@soundor/react':
         specifier: 0.21.0
         version: 0.21.0(react@19.3.1)
@@ -1231,6 +1234,15 @@ packages:
 
   '@soundor/expression@0.21.0':
     resolution: {integrity: sha512-Z3XjSVzk5PyqIN1EZps4Rw09AtH/ypfXKILK5Aw/WUwO+7y7zihcyYoymGeVxvmv77zRyzfo5wuGM4cmPtmguw==}
+
+  '@soundor/icons@0.3.0':
+    resolution: {integrity: sha512-7SS7OFsKNWe1Qzy0nSlwC1czWmZY7qKWsMkznHpZOx7571Lii+cveJtrDlYKgN6Q56Vaf/0KhV0gPHkJ3Xu2kg==}
+    peerDependencies:
+      '@soundor/react': ^0.21.0
+      react: ^19.3.0
+    peerDependenciesMeta:
+      '@soundor/react':
+        optional: true
 
   '@soundor/react@0.21.0':
     resolution: {integrity: sha512-9PqasyPTEoW0e8ghAk3TRIARe7fYfw+LzkPcLpnU7Pi1v2OmHnp9wRb7wpqG3dNUojhuBhZLQnMIYw0c8iIdJw==}
@@ -4230,6 +4242,12 @@ snapshots:
   '@soundor/environment@0.21.0': {}
 
   '@soundor/expression@0.21.0': {}
+
+  '@soundor/icons@0.3.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
+    optionalDependencies:
+      '@soundor/react': 0.21.0(react@19.3.1)
 
   '@soundor/react@0.21.0(react@19.3.1)':
     dependencies:

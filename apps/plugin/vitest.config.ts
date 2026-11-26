@@ -9,6 +9,6 @@ export default defineConfig({
     // Libraries that import soundor:* run through Vite, as @soundor/react
     // does, so the simulated runtime serves those imports. @soundor/vitest
     // 0.21 inlines only its own packages.
-    server: { deps: { inline: ['@soundor/components'] } },
+    server: { deps: { inline: ['@soundor/components', '@soundor/icons'] } },
   },
 });
