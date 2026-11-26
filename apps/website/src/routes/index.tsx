@@ -2,10 +2,12 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { buttonVariants } from 'fumadocs-ui/components/ui/button';
 import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { AudioWaveform, Code, Globe, Play, SlidersHorizontal } from 'lucide-react';
+import { AudioWaveform, Code, Download, Globe, Play, SlidersHorizontal } from 'lucide-react';
 
+import { Downloads } from '../components/downloads';
 import { Player } from '../components/player';
-import { layoutOptions } from '../layout-options';
+import { SiteFooter } from '../components/site-footer';
+import { layoutOptions, soundor } from '../layout-options';
 
 export const Route = createFileRoute('/')({ component: Home });
 
@@ -18,7 +20,14 @@ const bands = [
 
 function Home() {
   return (
-    <HomeLayout {...layoutOptions} links={[{ text: 'Docs', url: '/docs' }, ...layoutOptions.links]}>
+    <HomeLayout
+      {...layoutOptions}
+      links={[
+        { text: 'Docs', url: '/docs' },
+        { text: 'Download', url: '/#download' },
+        ...layoutOptions.links,
+      ]}
+    >
       <main className="relative isolate w-full overflow-hidden">
         <div
           aria-hidden
@@ -27,7 +36,7 @@ function Home() {
         <div className="mx-auto max-w-6xl px-6">
           <section className="flex flex-col items-center pt-20 pb-14 text-center sm:pt-28">
             <a
-              href="https://soundor.dev/"
+              href={`${soundor}/`}
               className="mb-6 inline-flex items-center gap-2 rounded-full border bg-fd-card/80 px-3 py-1 text-xs text-fd-muted-foreground backdrop-blur hover:text-fd-foreground"
             >
               <AudioWaveform aria-hidden className="size-3.5" />
@@ -42,8 +51,14 @@ function Home() {
             </p>
             <div className="mt-8 flex flex-wrap justify-center gap-3">
               <a
-                href="#play"
+                href="#download"
                 className={buttonVariants({ variant: 'primary', className: 'gap-1.5 px-4 py-2.5' })}
+              >
+                <Download aria-hidden className="size-4" /> Download
+              </a>
+              <a
+                href="#play"
+                className={buttonVariants({ variant: 'outline', className: 'gap-1.5 px-4 py-2.5' })}
               >
                 <Play aria-hidden className="size-4" /> Try in browser
               </a>
@@ -64,6 +79,19 @@ function Home() {
               Press Play below the plugin to start the synth loop. Use the settings button to switch
               to an audio file from your device.
             </p>
+          </section>
+          <section
+            id="download"
+            aria-labelledby="download-heading"
+            className="mx-auto max-w-3xl scroll-mt-20 pb-24 text-center"
+          >
+            <h2 id="download-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              Download Soundor Prism
+            </h2>
+            <p className="mt-2 mb-7 text-fd-muted-foreground">
+              A VST3 equalizer for Linux and Windows.
+            </p>
+            <Downloads />
           </section>
           <section aria-labelledby="bands" className="mx-auto max-w-[960px] pb-24">
             <h2
@@ -103,19 +131,7 @@ function Home() {
           </section>
         </div>
       </main>
-      <footer className="border-t px-6 py-8 text-sm text-fd-muted-foreground">
-        <div className="mx-auto flex max-w-6xl flex-wrap justify-between gap-4">
-          <a href="https://soundor.dev/" className="hover:text-fd-foreground">
-            Built with Soundor
-          </a>
-          <a
-            href={`${layoutOptions.githubUrl}/blob/main/LICENSE`}
-            className="hover:text-fd-foreground"
-          >
-            AGPL-3.0
-          </a>
-        </div>
-      </footer>
+      <SiteFooter />
     </HomeLayout>
   );
 }

@@ -6,6 +6,7 @@ target/
 *.tsbuildinfo
 .DS_Store
 apps/website/public/
+apps/website/content/docs/changelog.mdx
 .source/
 .tanstack/
 routeTree.gen.ts

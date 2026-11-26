@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/sync-public.ts && vite build && tsc --noEmit",
-    "dev": "node scripts/sync-public.ts && vite dev --host 0.0.0.0 --port 3000 --strictPort",
+    "build": "node scripts/changelog.ts && node scripts/sync-public.ts && vite build && tsc --noEmit",
+    "dev": "node scripts/changelog.ts && node scripts/sync-public.ts && vite dev --host 0.0.0.0 --port 3000 --strictPort",
     "preview": "vite preview"
   },
   "dependencies": {

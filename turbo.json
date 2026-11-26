@@ -14,7 +14,7 @@
     "prism-website#build": {
       "dependsOn": ["prism#build:web"],
       "env": ["PRISM_SITE_BASE", "VITE_PRISM_SITE_ORIGIN"],
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/assets/brand/**"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/assets/brand/**", "../plugin/CHANGELOG.md"],
       "outputs": ["dist/**"]
     },
     "prism-website#dev": {

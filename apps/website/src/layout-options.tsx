@@ -3,6 +3,10 @@ import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
 import logoDark from '../../../assets/brand/svg/soundor-prism-logo-on-dark.svg?url';
 import logo from '../../../assets/brand/svg/soundor-prism-logo.svg?url';
 
+export const repository = 'https://github.com/soundor/prism';
+export const soundor = 'https://soundor.dev';
+export const soundorLink = { text: 'Soundor', url: `${soundor}/`, external: true };
+
 export const layoutOptions = {
   nav: {
     title: (
@@ -17,6 +21,6 @@ export const layoutOptions = {
       </>
     ),
   },
-  githubUrl: 'https://github.com/soundor/prism',
-  links: [{ text: 'Soundor', url: 'https://soundor.dev/', external: true }],
+  githubUrl: repository,
+  links: [{ text: 'Changelog', url: '/docs/changelog' }, soundorLink],
 } satisfies BaseLayoutProps;
