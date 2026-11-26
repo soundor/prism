@@ -126,3 +126,13 @@ export const channelBadges: Record<Channel, string | null> = {
 
 export const filterTypeLabel = (type: FilterType) =>
   filterTypes.find((option) => option.value === type)!.label;
+
+export const channelLabel = (channel: Channel) =>
+  channels.find((option) => option.value === channel)!.label;
+
+/** What Q shapes for each kind of type, as the inspector names it. */
+export function qMeaning(type: FilterType): string {
+  if (hasSlope(type)) return 'resonance';
+  if (type === 'lowShelf' || type === 'highShelf') return 'shape';
+  return 'bandwidth';
+}

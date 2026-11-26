@@ -7,6 +7,7 @@ import { state } from 'soundor:state';
 
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
+import { useSelection } from '../bands/selection';
 import { useBands } from '../bands/use-bands';
 import {
   analyzerTicks,
@@ -35,6 +36,7 @@ const BYPASSED_OPACITY = 0.35;
 export function Graph() {
   const theme = useTheme();
   const bands = useBands();
+  const selection = useSelection();
   const bypassed = useParameter(parameters.bypass);
   const range = useStateValue(state.displayRange);
   const analyzerMode = useStateValue(state.analyzerMode);
@@ -123,6 +125,7 @@ export function Graph() {
               soloed={band.solo}
               dimmed={soloing && !band.solo}
               bypassed={bypassed}
+              selected={selection.some((s) => s.slot === band.slot)}
             />
           ))}
         </Plot>
