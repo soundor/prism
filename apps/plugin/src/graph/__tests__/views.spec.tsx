@@ -28,6 +28,20 @@ test('Display switches the graph to the phase response and back', async () => {
   expect(screen.getByText('dB')).toBeDefined();
 });
 
+test('the legend names the EQ curve once there is one, and the phase curve in that view', async () => {
+  const user = userEvent.setup();
+  await render(<App />);
+  expect(screen.queryByText('EQ curve')).toBeNull();
+
+  testParameters.set('band1Active', true);
+  await screen.findByText('EQ curve');
+  // Display's radios say Phase and Magnitude too; the legend adds one of each.
+  const phaseTexts = screen.getAllByText('Phase').length;
+  await user.click(screen.getByRole('radio', { name: 'Phase' }));
+  await waitFor(() => expect(screen.queryByText('EQ curve')).toBeNull());
+  expect(screen.getAllByText('Phase')).toHaveLength(phaseTexts + 1);
+});
+
 test('the spectrogram replaces the spectrum while it is on', async () => {
   const user = userEvent.setup();
   await render(<App />);

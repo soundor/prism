@@ -313,14 +313,34 @@ export function Graph({ simulation }: { simulation: Simulation }) {
       ) : soloed ? (
         <GraphStatus label={`Solo · Band ${soloed.slot}`} color={bandColor(theme, soloed.slot)} />
       ) : null}
-      <AnalyzerLegend pre={showPre} post={showPost} peak={showPost && peakHold} />
+      <Legend
+        curve={bands.length > 0 ? (phase ? 'phase' : 'magnitude') : null}
+        pre={showPre}
+        post={showPost}
+        peak={showPost && peakHold}
+      />
       <UnitLabels analyzer={analyzerAxis} phase={phase} />
     </View>
   );
 }
 
-function AnalyzerLegend({ pre, post, peak }: { pre: boolean; post: boolean; peak: boolean }) {
-  if (!pre && !post) return null;
+/**
+ * What each line is: the summed EQ curve first (or, in the phase view, the
+ * phase curve and the magnitude's ghost), then the analyzer's traces.
+ */
+function Legend({
+  curve,
+  pre,
+  post,
+  peak,
+}: {
+  curve: 'magnitude' | 'phase' | null;
+  pre: boolean;
+  post: boolean;
+  peak: boolean;
+}) {
+  const theme = useTheme();
+  if (!curve && !pre && !post) return null;
   return (
     <View
       style={{
@@ -333,6 +353,15 @@ function AnalyzerLegend({ pre, post, peak }: { pre: boolean; post: boolean; peak
         pointerEvents: 'none',
       }}
     >
+      {curve === 'magnitude' && (
+        <TraceKey label="EQ curve" color={theme.color.textInverse} strokeWidth={2} />
+      )}
+      {curve === 'phase' && (
+        <>
+          <TraceKey label="Phase" color={theme.color.displayWarning} strokeWidth={1.75} />
+          <TraceKey label="Magnitude" color={theme.color.textInverse} {...MAGNITUDE_GHOST} />
+        </>
+      )}
       {pre && <TraceKey label="Pre EQ" {...PRE_TRACE} />}
       {post && <TraceKey label="Post EQ" {...POST_TRACE} filled />}
       {peak && <TraceKey label="Post peak" color={POST_TRACE.color} dash={PEAK_DASH} />}
@@ -346,10 +375,12 @@ function TraceKey({
   strokeWidth = 1,
   dash,
   filled,
+  opacity = 1,
 }: {
   label: string;
   color: string;
   strokeWidth?: number;
+  opacity?: number;
   dash?: readonly number[];
   filled?: boolean;
 }) {
@@ -358,7 +389,13 @@ function TraceKey({
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
       <Svg width={16} height={9} viewBox={[0, 0, 16, 9]} accessible={false}>
         {filled && <Path d="M0 3.5H16V9H0Z" fill={color} fillOpacity={POST_FILL} />}
-        <Path d="M0 3.5H16" stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash} />
+        <Path
+          d="M0 3.5H16"
+          stroke={color}
+          strokeOpacity={opacity}
+          strokeWidth={strokeWidth}
+          strokeDasharray={dash}
+        />
       </Svg>
       <Text style={textStyle(theme, 'caption', theme.color.displayText)}>{label}</Text>
     </View>
