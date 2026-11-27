@@ -1,5 +1,43 @@
+diff --git a/dist/drawing-DAc5eclS.js b/dist/drawing-DAc5eclS.js
+index 275af73d7bc00dcdc9a1bc2dfec93ed031b0b6df..0645184ca5309fc00982ca37ee3833ebc22c7bbf 100644
+--- a/dist/drawing-DAc5eclS.js
++++ b/dist/drawing-DAc5eclS.js
+@@ -77,7 +77,7 @@ function drawGrid(ctx, rect, xs, ys, color, opacity = 1) {
+ 	ctx.stroke();
+ 	ctx.restore();
+ }
+-function drawAxes(ctx, rect, x, y, colors, font, shown = {}, side = "bottom", offset = 0) {
++function drawAxes(ctx, rect, x, y, colors, font, shown = {}, side = "bottom", offset = 0, labelGap = 0) {
+ 	const showX = shown.x ?? true;
+ 	const showY = shown.y ?? true;
+ 	if (!showX) x = [];
+@@ -102,8 +102,10 @@ function drawAxes(ctx, rect, x, y, colors, font, shown = {}, side = "bottom", of
+ 		ctx.moveTo(left, horizontal);
+ 		ctx.lineTo(right, horizontal);
+ 	}
+-	for (const tick of x) if (contains(rect, tick.at, rect.top)) segment(ctx, tick.at, horizontal, tick.at, horizontal + 3 * xDirection);
+-	for (const tick of y) if (contains(rect, rect.left, tick.at)) segment(ctx, vertical, tick.at, vertical + 3 * yDirection, tick.at);
++	// Follow the extra label clearance, leaving a small gap before the text.
++	const tickLength = 3 + Math.max(0, labelGap - 2);
++	for (const tick of x) if (contains(rect, tick.at, rect.top)) segment(ctx, tick.at, horizontal, tick.at, horizontal + tickLength * xDirection);
++	for (const tick of y) if (contains(rect, rect.left, tick.at)) segment(ctx, vertical, tick.at, vertical + tickLength * yDirection, tick.at);
+ 	ctx.stroke();
+ 	ctx.font = font;
+ 	ctx.textBaseline = "middle";
+@@ -111,9 +113,9 @@ function drawAxes(ctx, rect, x, y, colors, font, shown = {}, side = "bottom", of
+ 		if (!contains(rect, tick.at, rect.top)) continue;
+ 		const half = ctx.measureText(tick.text).width / 2;
+ 		const at = clamp(tick.at, rect.left + half, Math.max(rect.left + half, right - half));
+-		axisLabel(ctx, tick.text, at, horizontal + 10 * xDirection, "center", colors.label, colors.background);
++		axisLabel(ctx, tick.text, at, horizontal + (10 + labelGap) * xDirection, "center", colors.label, colors.background);
+ 	}
+-	for (const tick of y) if (contains(rect, rect.left, tick.at)) axisLabel(ctx, tick.text, vertical + 5 * yDirection, tick.at, yDirection > 0 ? "left" : "right", colors.label, colors.background);
++	for (const tick of y) if (contains(rect, rect.left, tick.at)) axisLabel(ctx, tick.text, vertical + (5 + labelGap) * yDirection, tick.at, yDirection > 0 ? "left" : "right", colors.label, colors.background);
+ 	ctx.restore();
+ }
+ function axisLabel(ctx, text, x, y, align, color, background) {
 diff --git a/dist/index.d.ts b/dist/index.d.ts
-index 075f537674f1ccd6e7c3ae61c53be13871e4b09c..6aa35fd8cbc330a7cc478f9a637c05370aa36a03 100644
+index 075f537674f1ccd6e7c3ae61c53be13871e4b09c..6d18e0db6816bd204d482a5f881c5c620ef7fb86 100644
 --- a/dist/index.d.ts
 +++ b/dist/index.d.ts
 @@ -489,6 +489,8 @@ interface MenuItemProps {
@@ -25,8 +63,28 @@ index 075f537674f1ccd6e7c3ae61c53be13871e4b09c..6aa35fd8cbc330a7cc478f9a637c0537
  /** A line between groups of items. */
  declare function Divider$1(): import("react").JSX.Element;
  interface MenuLabelProps {
+@@ -923,6 +929,10 @@ interface PlotProps extends DisplayCaption, StyleProps<'Plot'>, PlotBackgroundPr
+    * their own; the larger is used.
+    */
+   safeZone?: number;
++  /** Reserve an additional safe zone for draggable markers. Defaults to true. */
++  autoSafeZone?: boolean;
++  /** Extra pixels between each axis line and its tick labels. */
++  axisLabelGap?: number;
+   selection?: PlotSelection;
+   accessibilityLabel?: string;
+   debugId?: string;
+@@ -943,7 +953,7 @@ interface PlotProps extends DisplayCaption, StyleProps<'Plot'>, PlotBackgroundPr
+  * Every series, guide and marker is drawn on one canvas, once per frame at
+  * most: a live source's update draws, with no React render.
+  */
+-declare function PlotRoot({ width, height, children, safeZone: ownSafeZone, title, note, indicator, accessibilityLabel, debugId, onBackgroundPress, onBackgroundDoubleClick, onBackgroundPointerMove, onBackgroundPointerEnter, onBackgroundPointerLeave, onBackgroundContextMenu, onBackgroundDrag, selection, ...styles }: PlotProps): import("react").JSX.Element;
++declare function PlotRoot({ width, height, children, safeZone: ownSafeZone, autoSafeZone, axisLabelGap, title, note, indicator, accessibilityLabel, debugId, onBackgroundPress, onBackgroundDoubleClick, onBackgroundPointerMove, onBackgroundPointerEnter, onBackgroundPointerLeave, onBackgroundContextMenu, onBackgroundDrag, selection, ...styles }: PlotProps): import("react").JSX.Element;
+ /**
+  * A canvas chart for responses and measurements: `<Plot>` and its parts,
+  * `Plot.XAxis`, `Plot.Line`, `Plot.Marker` and the rest.
 diff --git a/dist/index.js b/dist/index.js
-index 182bf28a52b32e2f26d3a438313dca8cdde84aae..9dbd566d06d5e1a22768e967888f066c7a79d7e4 100644
+index 182bf28a52b32e2f26d3a438313dca8cdde84aae..8e91d91a7b36f947b06f58ec8054828d902fda7b 100644
 --- a/dist/index.js
 +++ b/dist/index.js
 @@ -2292,14 +2292,17 @@ function SubmenuPopup({ children, accessibilityLabel, debugId, sub, list, trigge
@@ -49,3 +107,55 @@ index 182bf28a52b32e2f26d3a438313dca8cdde84aae..9dbd566d06d5e1a22768e967888f066c
  	});
  }
  /** A line between groups of items. */
+@@ -4453,7 +4456,7 @@ function seriesColor(theme, config, index) {
+ * Every series, guide and marker is drawn on one canvas, once per frame at
+ * most: a live source's update draws, with no React render.
+ */
+-function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, title, note, indicator, accessibilityLabel, debugId, onBackgroundPress, onBackgroundDoubleClick, onBackgroundPointerMove, onBackgroundPointerEnter, onBackgroundPointerLeave, onBackgroundContextMenu, onBackgroundDrag, selection, ...styles }) {
++function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, autoSafeZone = true, axisLabelGap = 0, title, note, indicator, accessibilityLabel, debugId, onBackgroundPress, onBackgroundDoubleClick, onBackgroundPointerMove, onBackgroundPointerEnter, onBackgroundPointerLeave, onBackgroundContextMenu, onBackgroundDrag, selection, ...styles }) {
+ 	const { theme, slot, fontsReady } = useComponent("Plot", styles);
+ 	const c = theme.color;
+ 	const [controller] = useState(() => new PlotController());
+@@ -4477,7 +4480,8 @@ function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, title, n
+ 	const box = useCanvasBox(width, height);
+ 	const { node, width: logicalWidth, height: logicalHeight } = box;
+ 	const header = Boolean(title || note || indicator || legend);
+-	const safeZone = Math.max(0, ownSafeZone, draggable);
++	const safeZone = Math.max(0, ownSafeZone, autoSafeZone ? draggable : 0);
++	const labelGap = Math.max(0, axisLabelGap);
+ 	const geometry = useMemo(() => {
+ 		const entries = [...controller.namedAxes("x").map(([, axis]) => ({
+ 			name: "x",
+@@ -4492,11 +4496,11 @@ function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, title, n
+ 			top: 0,
+ 			bottom: 0
+ 		};
+-		const yRoom = Math.min(56, logicalWidth * .24);
++		const yRoom = Math.min(Math.max(56, 40 + labelGap), logicalWidth * .24);
+ 		const captionRoom = header ? Math.max(legend && (title || note) ? 48 : 28, logicalHeight * .2) : 0;
+ 		const visible = entries.filter(({ axis }) => !axis.hidden).map((entry) => {
+ 			const offset = lanes[entry.axis.side];
+-			lanes[entry.axis.side] += entry.name === "x" ? 20 : yRoom;
++			lanes[entry.axis.side] += entry.name === "x" ? 20 + labelGap : yRoom;
+ 			return {
+ 				...entry,
+ 				offset
+@@ -4585,7 +4589,8 @@ function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, title, n
+ 		version,
+ 		x,
+ 		y,
+-		safeZone
++		safeZone,
++		labelGap
+ 	]);
+ 	const { coordinates, resolve } = geometry;
+ 	const captioned = Boolean(title || note);
+@@ -4662,7 +4667,7 @@ function PlotRoot({ width, height, children, safeZone: ownSafeZone = 0, title, n
+ 		}, font, {
+ 			x: axis.name === "x",
+ 			y: axis.name === "y"
+-		}, axis.side, axis.offset);
++		}, axis.side, axis.offset, labelGap);
+ 		if (readout && inside) paintReadout(ctx, hovered, coordinates, x, resolve, series, samples, colors, theme, fontsReady, box.width);
+ 	});
+ 	useLayoutEffect(() => {

@@ -24,8 +24,6 @@ import { WHEEL_SETTLE_MS, wheelQ } from './editing';
  * layer's centre falls on the box's whole-pixel centre and circles stay round.
  */
 const BOX = 30;
-// Plot.Marker reserves its radius plus 5 px. Keep that space even in an empty plot.
-export const BAND_MARKER_SAFE_ZONE = BOX / 2 + 5;
 const FACE = 18;
 const FACE_LARGE = 20;
 /**

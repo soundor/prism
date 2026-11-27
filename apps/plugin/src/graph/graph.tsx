@@ -31,7 +31,7 @@ import {
   rangeDecibels,
 } from './axes';
 import { bandColor } from './band-colors';
-import { BAND_MARKER_SAFE_ZONE, BandMarker } from './band-marker';
+import { BandMarker } from './band-marker';
 import { bandAt, moveGroup } from './editing';
 import { BandTooltip, EmptyHint, GraphStatus, Readout } from './overlays';
 import { altStore, pointerStore, trackModifiers, useStore } from './pointer';
@@ -113,7 +113,10 @@ export function Graph({ simulation }: { simulation: Simulation }) {
         <Plot
           width={GRAPH_WIDTH}
           height={GRAPH_HEIGHT - PLOT_OFFSET}
-          safeZone={BAND_MARKER_SAFE_ZONE}
+          // The axis gutters already leave room for handles. Map the data
+          // all the way to the frame, with or without a visible handle.
+          autoSafeZone={false}
+          axisLabelGap={14}
           accessibilityLabel="Equalizer response and bands"
           styles={{ root: { backgroundColor: theme.color.display, borderRadius: 0 } }}
           selection={selectionProps}
