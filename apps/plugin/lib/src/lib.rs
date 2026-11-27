@@ -1,6 +1,8 @@
+pub mod engine;
 pub mod filter;
 
-use filter::{Design, FilterType, Shape, Slope, State};
+use engine::{Channel, Engine, Settings};
+use filter::{FilterType, Shape, Slope};
 use soundor::prelude::*;
 // The analyzer will be built on rustfft; until then only the tests use it,
 // so this keeps the dependency from being unused.
@@ -17,6 +19,8 @@ pub struct BandParameters {
     /// The band's own on/off: off, it stays in place but doesn't filter.
     pub enabled: bool,
     pub shape: Shape,
+    pub channel: Channel,
+    pub solo: bool,
 }
 
 impl BandParameters {
@@ -30,7 +34,7 @@ impl BandParameters {
 /// slot and setting, so the slots are listed out here.
 pub fn band_parameters(p: &Parameters) -> [BandParameters; BANDS] {
     macro_rules! slots {
-        ($($active:ident $enabled:ident $kind:ident $frequency:ident $gain:ident $q:ident $slope:ident;)*) => {
+        ($($active:ident $enabled:ident $kind:ident $frequency:ident $gain:ident $q:ident $slope:ident $channel:ident $solo:ident;)*) => {
             [$(BandParameters {
                 active: p.$active,
                 enabled: p.$enabled,
@@ -41,102 +45,76 @@ pub fn band_parameters(p: &Parameters) -> [BandParameters; BANDS] {
                     q: f64::from(p.$q),
                     slope: Slope::from_index(p.$slope.index()),
                 },
+                channel: Channel::from_index(p.$channel.index()),
+                solo: p.$solo,
             }),*]
         };
     }
     slots! {
-        band1_active band1_enabled band1_type band1_frequency band1_gain band1_q band1_slope;
-        band2_active band2_enabled band2_type band2_frequency band2_gain band2_q band2_slope;
-        band3_active band3_enabled band3_type band3_frequency band3_gain band3_q band3_slope;
-        band4_active band4_enabled band4_type band4_frequency band4_gain band4_q band4_slope;
-        band5_active band5_enabled band5_type band5_frequency band5_gain band5_q band5_slope;
-        band6_active band6_enabled band6_type band6_frequency band6_gain band6_q band6_slope;
-        band7_active band7_enabled band7_type band7_frequency band7_gain band7_q band7_slope;
-        band8_active band8_enabled band8_type band8_frequency band8_gain band8_q band8_slope;
-        band9_active band9_enabled band9_type band9_frequency band9_gain band9_q band9_slope;
-        band10_active band10_enabled band10_type band10_frequency band10_gain band10_q band10_slope;
-        band11_active band11_enabled band11_type band11_frequency band11_gain band11_q band11_slope;
-        band12_active band12_enabled band12_type band12_frequency band12_gain band12_q band12_slope;
-        band13_active band13_enabled band13_type band13_frequency band13_gain band13_q band13_slope;
-        band14_active band14_enabled band14_type band14_frequency band14_gain band14_q band14_slope;
-        band15_active band15_enabled band15_type band15_frequency band15_gain band15_q band15_slope;
-        band16_active band16_enabled band16_type band16_frequency band16_gain band16_q band16_slope;
-        band17_active band17_enabled band17_type band17_frequency band17_gain band17_q band17_slope;
-        band18_active band18_enabled band18_type band18_frequency band18_gain band18_q band18_slope;
-        band19_active band19_enabled band19_type band19_frequency band19_gain band19_q band19_slope;
-        band20_active band20_enabled band20_type band20_frequency band20_gain band20_q band20_slope;
-        band21_active band21_enabled band21_type band21_frequency band21_gain band21_q band21_slope;
-        band22_active band22_enabled band22_type band22_frequency band22_gain band22_q band22_slope;
-        band23_active band23_enabled band23_type band23_frequency band23_gain band23_q band23_slope;
-        band24_active band24_enabled band24_type band24_frequency band24_gain band24_q band24_slope;
+        band1_active band1_enabled band1_type band1_frequency band1_gain band1_q band1_slope band1_channel band1_solo;
+        band2_active band2_enabled band2_type band2_frequency band2_gain band2_q band2_slope band2_channel band2_solo;
+        band3_active band3_enabled band3_type band3_frequency band3_gain band3_q band3_slope band3_channel band3_solo;
+        band4_active band4_enabled band4_type band4_frequency band4_gain band4_q band4_slope band4_channel band4_solo;
+        band5_active band5_enabled band5_type band5_frequency band5_gain band5_q band5_slope band5_channel band5_solo;
+        band6_active band6_enabled band6_type band6_frequency band6_gain band6_q band6_slope band6_channel band6_solo;
+        band7_active band7_enabled band7_type band7_frequency band7_gain band7_q band7_slope band7_channel band7_solo;
+        band8_active band8_enabled band8_type band8_frequency band8_gain band8_q band8_slope band8_channel band8_solo;
+        band9_active band9_enabled band9_type band9_frequency band9_gain band9_q band9_slope band9_channel band9_solo;
+        band10_active band10_enabled band10_type band10_frequency band10_gain band10_q band10_slope band10_channel band10_solo;
+        band11_active band11_enabled band11_type band11_frequency band11_gain band11_q band11_slope band11_channel band11_solo;
+        band12_active band12_enabled band12_type band12_frequency band12_gain band12_q band12_slope band12_channel band12_solo;
+        band13_active band13_enabled band13_type band13_frequency band13_gain band13_q band13_slope band13_channel band13_solo;
+        band14_active band14_enabled band14_type band14_frequency band14_gain band14_q band14_slope band14_channel band14_solo;
+        band15_active band15_enabled band15_type band15_frequency band15_gain band15_q band15_slope band15_channel band15_solo;
+        band16_active band16_enabled band16_type band16_frequency band16_gain band16_q band16_slope band16_channel band16_solo;
+        band17_active band17_enabled band17_type band17_frequency band17_gain band17_q band17_slope band17_channel band17_solo;
+        band18_active band18_enabled band18_type band18_frequency band18_gain band18_q band18_slope band18_channel band18_solo;
+        band19_active band19_enabled band19_type band19_frequency band19_gain band19_q band19_slope band19_channel band19_solo;
+        band20_active band20_enabled band20_type band20_frequency band20_gain band20_q band20_slope band20_channel band20_solo;
+        band21_active band21_enabled band21_type band21_frequency band21_gain band21_q band21_slope band21_channel band21_solo;
+        band22_active band22_enabled band22_type band22_frequency band22_gain band22_q band22_slope band22_channel band22_solo;
+        band23_active band23_enabled band23_type band23_frequency band23_gain band23_q band23_slope band23_channel band23_solo;
+        band24_active band24_enabled band24_type band24_frequency band24_gain band24_q band24_slope band24_channel band24_solo;
     }
 }
 
-/// The channels Prism filters: left and right, or a mono channel alone.
-const CHANNELS: usize = 2;
-
-/// One slot's filter: its design, kept until the settings change, and each
-/// channel's memory.
-#[derive(Clone, Copy, Default)]
-struct Band {
-    shape: Option<Shape>,
-    design: Option<Design>,
-    states: [State; CHANNELS],
+fn settings<'a>(p: &Parameters, bands: &'a [BandParameters; BANDS]) -> Settings<'a> {
+    Settings {
+        bands,
+        bypass: p.bypass,
+        input_gain: f64::from(p.input_gain),
+        output_gain: f64::from(p.output_gain),
+    }
 }
 
-/// Prism's processor: every band that is in use and on filters both
-/// channels, in slot order. Global bypass leaves the audio as it came.
-///
-/// Settings take effect at the start of each block, without smoothing, and
-/// the channel, solo and input and output gain parameters are not applied
-/// yet.
+/// Prism's processor: the [`Engine`] over the main bus's first two channels,
+/// or its only one.
 #[derive(Default)]
 pub struct PluginProcessor {
-    sample_rate: f64,
-    bands: [Band; BANDS],
+    engine: Option<Engine>,
 }
 
 impl Processor for PluginProcessor {
     fn prepare(&mut self, ctx: &PrepareContext) {
-        self.sample_rate = ctx.sample_rate;
-        self.bands = Default::default();
+        let bands = band_parameters(ctx.params);
+        self.engine = Some(Engine::new(ctx.sample_rate, &settings(ctx.params, &bands)));
     }
 
     fn process(&mut self, ctx: &mut ProcessContext) {
-        if ctx.params.bypass {
+        let Some(engine) = &mut self.engine else {
             return;
-        }
-        let parameters = band_parameters(ctx.params);
-        for (band, parameters) in self.bands.iter_mut().zip(&parameters) {
-            if !parameters.audible() {
-                // Started afresh when it's heard again.
-                band.shape = None;
-                band.design = None;
-                continue;
-            }
-            if band.shape != Some(parameters.shape) {
-                if band.shape.is_none() {
-                    band.states = Default::default();
-                }
-                band.shape = Some(parameters.shape);
-                band.design = Some(Design::new(&parameters.shape, self.sample_rate));
-            }
-        }
-        for (channel, samples) in ctx.audio.channels().take(CHANNELS).enumerate() {
-            for band in &mut self.bands {
-                let (Some(design), state) = (&band.design, &mut band.states[channel]) else {
-                    continue;
-                };
-                for sample in samples.iter_mut() {
-                    *sample = design.tick(state, f64::from(*sample)) as f32;
-                }
-            }
+        };
+        let bands = band_parameters(ctx.params);
+        let settings = settings(ctx.params, &bands);
+        let mut channels = ctx.audio.channels();
+        if let Some(left) = channels.next() {
+            engine.process(&settings, left, channels.next());
         }
     }
 
     fn reset(&mut self) {
-        for band in &mut self.bands {
-            band.states = Default::default();
+        if let Some(engine) = &mut self.engine {
+            engine.reset();
         }
     }
 }
@@ -265,6 +243,28 @@ mod tests {
         ];
         assert_close(&gain_at(&cut, 10_000.0), 0.0, 0.05);
         assert!(gain_at(&cut, 250.0).iter().all(|&gain| gain < -90.0));
+    }
+
+    #[test]
+    fn input_and_output_gain_apply() {
+        let gains = [("inputGain", -6.0), ("outputGain", 2.5)];
+        assert_close(&gain_at(&gains, 440.0), -3.5, 0.01);
+    }
+
+    #[test]
+    fn a_mono_bus_is_filtered() {
+        let mut processor = TestProcessor::<PluginProcessor>::new()
+            .sample_rate(RATE)
+            .block_size(256)
+            .channels(1)
+            .parameter("band1Active", 1.0)
+            .parameter("band1Gain", -12.0)
+            .build();
+        let input = sine(1000.0, RATE as usize);
+        let output = processor.process(&[&input]);
+        let half = input.len() / 2;
+        let gain = 20.0 * (rms(&output[0][half..]) / rms(&input[half..])).log10();
+        assert!((gain + 12.0).abs() < 0.05, "{gain:.3} dB");
     }
 
     #[test]

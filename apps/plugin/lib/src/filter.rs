@@ -18,7 +18,7 @@ pub const MAX_STAGES: usize = 4;
 
 /// The Q a cut's band setting is neutral at: the graph's rounded 1/sqrt(2).
 #[allow(clippy::approx_constant)]
-const NEUTRAL_Q: f64 = 0.7071;
+pub const NEUTRAL_Q: f64 = 0.7071;
 
 /// What fraction of the sample rate a frequency is held under, as the graph
 /// does, so a band set above Nyquist stays a filter rather than failing.
@@ -207,6 +207,33 @@ impl Stage {
     }
 }
 
+impl Stage {
+    /// The numbers a stage runs on, to interpolate between two designs.
+    fn values(&self) -> [f64; 6] {
+        match *self {
+            Self::Svf { coefs: c, .. } => [c.a1, c.a2, c.a3, c.m0, c.m1, c.m2],
+            Self::OnePole { g, .. } => [g, 0.0, 0.0, 0.0, 0.0, 0.0],
+        }
+    }
+
+    /// Moves the numbers it runs on by `delta`. Its `g` and `k`, which only
+    /// its response is computed from, stay as they were.
+    #[inline]
+    fn shift(&mut self, delta: &[f64; 6]) {
+        match self {
+            Self::Svf { coefs: c, .. } => {
+                c.a1 += delta[0];
+                c.a2 += delta[1];
+                c.a3 += delta[2];
+                c.m0 += delta[3];
+                c.m1 += delta[4];
+                c.m2 += delta[5];
+            }
+            Self::OnePole { g, .. } => *g += delta[0],
+        }
+    }
+}
+
 fn divide(n: (f64, f64), d: (f64, f64)) -> (f64, f64) {
     let m = d.0 * d.0 + d.1 * d.1;
     ((n.0 * d.0 + n.1 * d.1) / m, (n.1 * d.0 - n.0 * d.1) / m)
@@ -318,6 +345,78 @@ impl Design {
             };
         }
         y
+    }
+}
+
+/// A design that moves to the next one a sample at a time, its coefficients
+/// interpolated in a straight line, so a band can glide without the steps
+/// in between being heard.
+#[derive(Clone, Copy, Debug)]
+pub struct Ramp {
+    design: Design,
+    target: Design,
+    delta: [[f64; 6]; MAX_STAGES],
+    remaining: usize,
+}
+
+impl Ramp {
+    pub fn new(design: Design) -> Self {
+        Self {
+            design,
+            target: design,
+            delta: [[0.0; 6]; MAX_STAGES],
+            remaining: 0,
+        }
+    }
+
+    /// The design as it is at this sample.
+    pub fn design(&self) -> &Design {
+        &self.design
+    }
+
+    /// Heads for `target`, to arrive in `frames` samples. A design with
+    /// other stages can't be interpolated to, and takes over at once.
+    pub fn set(&mut self, target: Design, frames: usize) {
+        let comparable = target.count == self.design.count
+            && target.stages[..target.count]
+                .iter()
+                .zip(&self.design.stages)
+                .all(|(a, b)| std::mem::discriminant(a) == std::mem::discriminant(b));
+        if !comparable || frames == 0 {
+            *self = Self::new(target);
+            return;
+        }
+        for (i, (to, from)) in target.stages[..target.count]
+            .iter()
+            .zip(&self.design.stages)
+            .enumerate()
+        {
+            let (to, from) = (to.values(), from.values());
+            for j in 0..6 {
+                self.delta[i][j] = (to[j] - from[j]) / frames as f64;
+            }
+        }
+        self.target = target;
+        self.remaining = frames;
+    }
+
+    /// Moves one sample along.
+    #[inline]
+    pub fn advance(&mut self) {
+        if self.remaining == 0 {
+            return;
+        }
+        self.remaining -= 1;
+        if self.remaining == 0 {
+            self.design = self.target;
+            return;
+        }
+        for (stage, delta) in self.design.stages[..self.design.count]
+            .iter_mut()
+            .zip(&self.delta)
+        {
+            stage.shift(delta);
+        }
     }
 }
 
