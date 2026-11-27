@@ -231,11 +231,25 @@ export default defineSoundorConfig({
       DisplayMode: { enum: ['magnitude', 'phase'] },
       DisplayRange: { enum: ['db3', 'db6', 'db12', 'db24', 'db30'] },
     },
+    // The editor asks the processor to analyze while it shows the analyzer.
+    // The analyzer's settings are enums, which the processor cannot read as
+    // state, so the controller hands it them as a resource.
+    methods: {
+      analyze: { args: { enabled: 'boolean' } },
+    },
+    resources: {
+      // FFT size, window and speed (their option indices), and whether to
+      // analyze at all; empty until the editor first asks.
+      analyzer: { type: 'buffer<uint32>' },
+    },
     // What the processor measures, sent to the editor.
     streams: {
       // The output's peak level per channel (left, right), in dBFS, held
       // over the last 50 ms so that a frame of the editor misses none.
       outputLevels: { type: 'buffer<float32>', maxLength: 2 },
+      // The spectrum before and after the EQ, in dBFS at each of the graph's
+      // 320 grid frequencies: the pre spectrum, then the post one.
+      spectrum: { type: 'buffer<float32>', maxLength: 640 },
     },
   },
   // Saved with the DAW project. Field names are persistent identities.

@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     environment: 'soundor',
     include: ['src/**/__tests__/*.spec.{ts,tsx}'],
+    setupFiles: ['./vitest.setup.ts'],
     // Libraries that import soundor:* run through Vite, as @soundor/react
     // does, so the simulated runtime serves those imports. @soundor/vitest
     // 0.21 inlines only its own packages.
