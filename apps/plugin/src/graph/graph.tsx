@@ -1,11 +1,21 @@
 import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
-import { createRef, useCallback, useMemo, useRef, useState, type RefObject } from 'react';
+import { Path, Svg } from '@soundor/react/svg';
+import {
+  createRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
 import type { PointerEvent, UiNode } from 'soundor:ui';
 
+import type { Simulation } from '../analyzer/simulation';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
 import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
@@ -35,12 +45,18 @@ const PLOT_OFFSET = 20;
 
 /** Opacity of everything drawn from the bands while the plugin is bypassed. */
 const BYPASSED_OPACITY = 0.35;
+const PRE_TRACE = { color: '#747986', strokeWidth: 1 };
+const POST_TRACE = { color: '#B3A5D8', strokeWidth: 1.5 };
+const PEAK_DASH = [1, 3];
+const POST_FILL = 0.18;
+// Plot.Band renders its fill at a quarter of the supplied series opacity.
+const POST_BAND_OPACITY = POST_FILL / 0.25;
 
 // The equalizer graph: grid and axes, each band's response, the combined
 // response, and the band markers on top, which are dragged to edit the
 // bands. A double-click on the graph adds a band; a drag on it selects the
 // markers in a rectangle.
-export function Graph() {
+export function Graph({ simulation }: { simulation: Simulation }) {
   const theme = useTheme();
   const bands = useBands();
   const selection = useSelection();
@@ -49,12 +65,16 @@ export function Graph() {
   const analyzerMode = useStateValue(state.analyzerMode);
   const spectrogram = useStateValue(state.showSpectrogram);
   const floor = useStateValue(state.analyzerFloor);
+  const peakHold = useStateValue(state.analyzerPeakHold);
 
   const responses = useResponses(bands);
+  useEffect(() => simulation.setResponse(responses.combined), [simulation, responses.combined]);
   const soloed = bands.find((band) => band.solo);
   const soloing = soloed !== undefined;
   const limit = rangeDecibels[range];
   const analyzerAxis = analyzerMode !== 'off' || spectrogram;
+  const showPre = analyzerAxis && !spectrogram && (bypassed || analyzerMode !== 'post');
+  const showPost = analyzerAxis && !spectrogram && !bypassed && analyzerMode !== 'pre';
   const fade = bypassed ? BYPASSED_OPACITY : 1;
 
   const [hovered, setHovered] = useState<number | null>(null);
@@ -112,6 +132,31 @@ export function Graph() {
             hidden={!analyzerAxis}
           />
           <Plot.Grid />
+          {showPre && (
+            <Plot.Line source={simulation.pre} yAxis="analyzer" {...PRE_TRACE} hideInReadout />
+          )}
+          {showPost && (
+            <>
+              <Plot.Band
+                source={simulation.postFill}
+                yAxis="analyzer"
+                color={POST_TRACE.color}
+                opacity={POST_BAND_OPACITY}
+                hideInReadout
+              />
+              <Plot.Line source={simulation.post} yAxis="analyzer" {...POST_TRACE} hideInReadout />
+            </>
+          )}
+          {showPost && peakHold && (
+            <Plot.Line
+              source={simulation.peak}
+              yAxis="analyzer"
+              color={POST_TRACE.color}
+              opacity={0.4}
+              dash={PEAK_DASH}
+              hideInReadout
+            />
+          )}
           <Plot.HorizontalLine value={0} color={theme.color.displayAxis} />
 
           {bands.map((band) => (
@@ -199,7 +244,54 @@ export function Graph() {
       ) : soloed ? (
         <GraphStatus label={`Solo · Band ${soloed.slot}`} color={bandColor(theme, soloed.slot)} />
       ) : null}
+      <AnalyzerLegend pre={showPre} post={showPost} peak={showPost && peakHold} />
       <UnitLabels analyzer={analyzerAxis} />
+    </View>
+  );
+}
+
+function AnalyzerLegend({ pre, post, peak }: { pre: boolean; post: boolean; peak: boolean }) {
+  if (!pre && !post) return null;
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        right: 52,
+        top: 6,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        pointerEvents: 'none',
+      }}
+    >
+      {pre && <TraceKey label="Pre EQ" {...PRE_TRACE} />}
+      {post && <TraceKey label="Post EQ" {...POST_TRACE} filled />}
+      {peak && <TraceKey label="Post peak" color={POST_TRACE.color} dash={PEAK_DASH} />}
+    </View>
+  );
+}
+
+function TraceKey({
+  label,
+  color,
+  strokeWidth = 1,
+  dash,
+  filled,
+}: {
+  label: string;
+  color: string;
+  strokeWidth?: number;
+  dash?: readonly number[];
+  filled?: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      <Svg width={16} height={9} viewBox={[0, 0, 16, 9]} accessible={false}>
+        {filled && <Path d="M0 3.5H16V9H0Z" fill={color} fillOpacity={POST_FILL} />}
+        <Path d="M0 3.5H16" stroke={color} strokeWidth={strokeWidth} strokeDasharray={dash} />
+      </Svg>
+      <Text style={textStyle(theme, 'caption', theme.color.displayText)}>{label}</Text>
     </View>
   );
 }

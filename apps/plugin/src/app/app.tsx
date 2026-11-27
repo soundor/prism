@@ -1,7 +1,9 @@
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
+import { useEffect, useState } from 'react';
 import { history } from 'soundor:history';
 
+import { createSimulation } from '../analyzer/simulation';
 import { clearSelection } from '../bands/selection';
 import { trackModifiers } from '../graph/pointer';
 import { EDGE, EDITOR_HEIGHT, EDITOR_WIDTH, GAP } from './layout';
@@ -13,6 +15,8 @@ import { MeterColumn } from '../meters/meter-column';
 
 export function App() {
   const theme = useTheme();
+  const [simulation] = useState(createSimulation);
+  useEffect(() => simulation.start(), [simulation]);
   return (
     <View
       style={{
@@ -48,11 +52,11 @@ export function App() {
     >
       <Header />
       <View style={{ flexDirection: 'row', gap: GAP, paddingTop: GAP, paddingHorizontal: EDGE }}>
-        <Graph />
-        <MeterColumn />
+        <Graph simulation={simulation} />
+        <MeterColumn levels={simulation.meters} />
       </View>
       <Inspector />
-      <Footer />
+      <Footer onFreeze={simulation.setFrozen} />
     </View>
   );
 }
