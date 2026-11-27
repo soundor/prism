@@ -7,10 +7,12 @@ import { filterTypes, slopes, type BandSettings } from '../../bands/catalog';
 import { responseAt, SAMPLE_RATE } from '../response';
 
 // The graph's curves, written out for the processor's tests
-// (lib/src/filter.rs), which hold the audio to them. Run with
+// (lib/tests/filter.rs), which hold the audio to them. Run with
 // UPDATE_FIXTURE=1 to rewrite the file after changing the curve math.
 
-const FIXTURE = fileURLToPath(new URL('../../../lib/src/filter_fixture.rs', import.meta.url));
+const FIXTURE = fileURLToPath(
+  new URL('../../../lib/tests/fixtures/filter_response.rs', import.meta.url),
+);
 const FREQUENCIES = Array.from({ length: 31 }, (_, i) => 10 * 3000 ** (i / 30));
 
 type Case = Pick<BandSettings, 'type' | 'frequency' | 'gain' | 'q' | 'slope'>;
