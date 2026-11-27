@@ -17,7 +17,6 @@ import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 const HISTORY = 120;
 /** Frequency columns drawn across the plot. */
 const COLUMNS = 192;
-const OPACITY = 0.85;
 
 export interface Frame {
   left: number;
@@ -61,7 +60,6 @@ export function SpectrogramLayer({
         position: 'absolute',
         left: frame.left,
         top: frame.top,
-        opacity: OPACITY,
         pointerEvents: 'none',
       }}
     >
@@ -83,15 +81,22 @@ export function SpectrogramLayer({
   );
 }
 
-/** From the graph's ground through the palette's lavender to its coral. */
+/**
+ * A sequential ramp in Prism's purple: from the graph's ground, so that
+ * silence disappears into it, through dark violets that keep quiet material
+ * unobtrusive, to a near-white lilac for the loudest. Lightness rises at
+ * every stop, so louder always reads as brighter.
+ */
 export function heatMap(theme: Theme): (fraction: number) => string {
-  const c = theme.color;
   const stops: readonly [number, string][] = [
-    [0, c.display],
-    [0.25, c.displayGrid],
-    [0.6, c.lavenderStrong],
-    [0.85, c.lavender],
-    [1, c.coral],
+    [0, theme.color.display],
+    [1 / 7, '#20192f'],
+    [2 / 7, '#35234f'],
+    [3 / 7, '#56367c'],
+    [4 / 7, '#8654b5'],
+    [5 / 7, '#b78adf'],
+    [6 / 7, '#dfc1f1'],
+    [1, '#fff1fa'],
   ];
   return (fraction) => {
     const n = Math.min(1, Math.max(0, fraction));
