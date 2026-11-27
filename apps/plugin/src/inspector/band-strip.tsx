@@ -2,6 +2,7 @@ import { Button, SelectableList, Tooltip } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Headphones, Plus } from '@soundor/icons/lucide';
 import { Text, View } from '@soundor/react';
+import { Circle, Rect, Svg } from '@soundor/react/svg';
 
 import { filterTypeLabel, hasSlope, MAX_BANDS, type Band } from '../bands/catalog';
 import { addBand } from '../bands/edit';
@@ -11,9 +12,14 @@ import { bandColor, bandColorOnLight } from '../graph/band-colors';
 
 export const STRIP_HEIGHT = 32;
 
+/** The band dot's size; even, so it centres on a whole pixel. */
+const DOT = 10;
+
 /**
- * One chip per band, to select it: every press adds the band to the
- * selection or takes it out. Then how many slots are in use, and Add.
+ * One chip per band, selected as files are in a file manager: a click selects
+ * that band alone, Ctrl (Cmd on macOS) adds or removes one, Shift selects the
+ * range from the last one chosen. Then how many slots are in use, and Add,
+ * or "Full" once all of them are.
  */
 export function BandStrip() {
   const theme = useTheme();
@@ -41,7 +47,7 @@ export function BandStrip() {
           <SelectableList
             accessibilityLabel="Bands"
             orientation="horizontal"
-            multiple
+            selectionMode="extended"
             items={bands.map((band) => ({ id: String(band.slot), label: chipLabel(band) }))}
             selectedIds={selected}
             onSelectionChange={(ids) => setSelection(ids.map(Number))}
@@ -67,24 +73,23 @@ export function BandStrip() {
       <Text style={{ fontFamily: theme.font.mono, fontSize: 10, color: theme.color.textMuted }}>
         {`${bands.length}/${MAX_BANDS}`}
       </Text>
-      <Tooltip content={full ? `All ${MAX_BANDS} bands are in use` : 'Add a bell at 1 kHz'}>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={full}
-          accessibilityLabel="Add band"
-          onPress={() => addBand(bands)}
-          leading={
-            <Plus
-              size={12}
-              color={full ? theme.color.textDisabled : theme.color.textSecondary}
-              strokeWidth={1.8}
-            />
-          }
-        >
-          Add
-        </Button>
-      </Tooltip>
+      {/* Once every slot is used, a quiet word in Add's place: no control,
+          and narrower than the button, as the 24 chips need its room. */}
+      {full ? (
+        <Text style={textStyle(theme, 'caption', theme.color.textDisabled)}>Full</Text>
+      ) : (
+        <Tooltip content="Add a bell at 1 kHz">
+          <Button
+            size="sm"
+            variant="ghost"
+            accessibilityLabel="Add band"
+            onPress={() => addBand(bands)}
+            leading={<Plus size={12} color={theme.color.textSecondary} strokeWidth={1.8} />}
+          >
+            Add
+          </Button>
+        </Tooltip>
+      )}
     </View>
   );
 }
@@ -149,22 +154,37 @@ function Chip({ band, selected, hovered }: { band: Band; selected: boolean; hove
 /**
  * The band's own colour, edged with a deeper shade of it so the pastel holds
  * its shape on the light chrome; a bypassed band's dot is that edge alone.
- * Even sizes keep it round.
+ *
+ * Drawn as a vector shape, not a rounded view: when the web host scales the
+ * editor to fit its window, a bordered box's edges snap to device pixels one
+ * by one, and at 8 or 9 px a pixel's difference turns the circle into an oval.
+ * The stroke sits inside the 10 px box, as a border would.
  */
 function BandDot({ band }: { band: Band }) {
   const theme = useTheme();
   // Measured against the selected chip's background, the darker of the two.
   const edge = bandColorOnLight(theme, band.slot, theme.color.surfaceInset);
+  const stroke = band.enabled ? 1 : 2;
+  const inset = stroke / 2;
+  const paint = {
+    fill: band.enabled ? bandColor(theme, band.slot) : 'none',
+    stroke: edge,
+    strokeWidth: stroke,
+  };
   return (
-    <View
-      style={{
-        width: 10,
-        height: 10,
-        borderRadius: hasSlope(band.type) ? 2.5 : 5,
-        backgroundColor: band.enabled ? bandColor(theme, band.slot) : 'transparent',
-        borderWidth: band.enabled ? 1 : 2,
-        borderColor: edge,
-      }}
-    />
+    <Svg width={DOT} height={DOT} viewBox={[0, 0, DOT, DOT]}>
+      {hasSlope(band.type) ? (
+        <Rect
+          x={inset}
+          y={inset}
+          width={DOT - stroke}
+          height={DOT - stroke}
+          rx={2.5 - inset}
+          {...paint}
+        />
+      ) : (
+        <Circle cx={DOT / 2} cy={DOT / 2} r={DOT / 2 - inset} {...paint} />
+      )}
+    </Svg>
   );
 }

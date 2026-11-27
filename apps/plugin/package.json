@@ -19,22 +19,22 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
   },
   "dependencies": {
-    "@soundor/components": "0.5.0",
+    "@soundor/components": "0.6.0",
     "@soundor/icons": "0.3.0",
-    "@soundor/react": "0.21.0",
-    "@soundor/vst3-runtime": "0.2.0",
-    "@soundor/web-runtime": "0.17.0",
+    "@soundor/react": "0.21.1",
+    "@soundor/vst3-runtime": "0.2.1",
+    "@soundor/web-runtime": "0.18.0",
     "react": "19.3.1"
   },
   "devDependencies": {
     "@playwright/test": "1.65.1",
-    "@soundor/config": "0.21.0",
-    "@soundor/testing-library": "0.21.0",
-    "@soundor/vitest": "0.21.0",
-    "@soundor/vst3-host": "0.2.3",
+    "@soundor/config": "0.21.1",
+    "@soundor/testing-library": "0.21.1",
+    "@soundor/vitest": "0.21.1",
+    "@soundor/vst3-host": "0.2.4",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
-    "soundor": "0.21.0",
+    "soundor": "0.21.1",
     "typescript": "7.0.2",
     "vitest": "5.1.0",
     "vitest-environment-soundor": "0.21.0"

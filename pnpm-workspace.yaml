@@ -7,6 +7,27 @@ strictPeerDependencies: true
 allowBuilds:
   esbuild: false
 minimumReleaseAgeExclude:
-  - '@soundor/components@0.5.0'
+  - '@soundor/components@0.6.0'
+  - '@soundor/config@0.21.1'
+  - '@soundor/core@0.21.1'
+  - '@soundor/devtools-client@0.21.1'
+  - '@soundor/devtools-protocol@0.21.1'
+  - '@soundor/devtools-server@0.21.1'
+  - '@soundor/driver@0.21.1'
+  - '@soundor/engine@0.12.1'
+  - '@soundor/environment@0.21.1'
+  - '@soundor/expression@0.21.1'
+  - '@soundor/react@0.21.1'
+  - '@soundor/runtime-sdk@0.21.1'
+  - '@soundor/test-runtime@0.21.1'
+  - '@soundor/testing-library@0.21.1'
+  - '@soundor/vitest@0.21.1'
+  - '@soundor/vst3-host-darwin-universal@0.2.4'
+  - '@soundor/vst3-host-linux-x64-gnu@0.2.4'
+  - '@soundor/vst3-host-win32-x64@0.2.4'
+  - '@soundor/vst3-host@0.2.4'
+  - '@soundor/vst3-runtime@0.2.1'
+  - '@soundor/web-runtime@0.18.0'
+  - soundor@0.21.1
 patchedDependencies:
-  '@soundor/components@0.5.0': patches/@soundor__components@0.5.0.patch
+  '@soundor/components@0.6.0': patches/@soundor__components@0.6.0.patch

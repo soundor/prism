@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@soundor/components@0.5.0': 63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e
+  '@soundor/components@0.6.0': 97b2dae05392e92429ad6ca8600d054cee763ac3900650bae0c4e499da9f9087
 
 importers:
 
@@ -182,20 +182,20 @@ importers:
   apps/plugin:
     dependencies:
       '@soundor/components':
-        specifier: 0.5.0
-        version: 0.5.0(patch_hash=63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
+        specifier: 0.6.0
+        version: 0.6.0(patch_hash=97b2dae05392e92429ad6ca8600d054cee763ac3900650bae0c4e499da9f9087)(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)
       '@soundor/icons':
         specifier: 0.3.0
-        version: 0.3.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
+        version: 0.3.0(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)
       '@soundor/react':
-        specifier: 0.21.0
-        version: 0.21.0(react@19.3.1)
+        specifier: 0.21.1
+        version: 0.21.1(react@19.3.1)
       '@soundor/vst3-runtime':
-        specifier: 0.2.0
-        version: 0.2.0(@soundor/vst3-host@0.2.3)(soundor@0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2))
+        specifier: 0.2.1
+        version: 0.2.1(@soundor/vst3-host@0.2.4)(soundor@0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2))
       '@soundor/web-runtime':
-        specifier: 0.17.0
-        version: 0.17.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(soundor@0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2))(yaml@2.9.1)
+        specifier: 0.18.0
+        version: 0.18.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(soundor@0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2))(yaml@2.9.1)
       react:
         specifier: 19.3.1
         version: 19.3.1
@@ -204,17 +204,17 @@ importers:
         specifier: 1.65.1
         version: 1.65.1
       '@soundor/config':
-        specifier: 0.21.0
-        version: 0.21.0
+        specifier: 0.21.1
+        version: 0.21.1
       '@soundor/testing-library':
-        specifier: 0.21.0
-        version: 0.21.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
+        specifier: 0.21.1
+        version: 0.21.1(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       '@soundor/vitest':
-        specifier: 0.21.0
-        version: 0.21.0(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
+        specifier: 0.21.1
+        version: 0.21.1(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       '@soundor/vst3-host':
-        specifier: 0.2.3
-        version: 0.2.3
+        specifier: 0.2.4
+        version: 0.2.4
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
@@ -222,8 +222,8 @@ importers:
         specifier: 19.3.0
         version: 19.3.0
       soundor:
-        specifier: 0.21.0
-        version: 0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2)
+        specifier: 0.21.1
+        version: 0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2)
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -1199,44 +1199,53 @@ packages:
   '@shikijs/vscode-textmate@10.1.0':
     resolution: {integrity: sha512-cVBuhDQjBZaNMTwBquYfPydrUP+E3hE6oYGasx8h6ZrODIM7/r+gxLDXdd66oszbrggZHEntdE6j+5gYIVyMWQ==}
 
-  '@soundor/components@0.5.0':
-    resolution: {integrity: sha512-b/g5FhEwaTILmlo/5ClW8JeK4xo8Jn9w07AcjqJ0aXHwIRvYuFljL/buQQatQv7GsuaSQtTAo74gSH+bXMFIew==}
+  '@soundor/components@0.6.0':
+    resolution: {integrity: sha512-G/oMqJPpF5M5m830KPcfcqul9vVf2qXQPMeRr81ZMQHJc0XZsEGH0mDtKJh0EzrnOpbml5KNOUOQoad8blYtKw==}
     peerDependencies:
-      '@soundor/react': ^0.21.0
+      '@soundor/react': ^0.21.1
       react: ^19.3.0
 
-  '@soundor/config@0.21.0':
-    resolution: {integrity: sha512-Lf7qPzb8V022Zacj0q2yzp2qjy53VpsEVnMv8IwRGezTnQ4cGbxZgsCmXQe4FE7WkSstjcWNb4lFE0TPTrdICA==}
+  '@soundor/config@0.21.1':
+    resolution: {integrity: sha512-pwK+hstmFU8rO6GceoMzVAjFemdjWJF7PTFwK8vyWMmYDXjdFqx6yGk/RfM84EgG5+1BfWsbBKYzJkXBf8dD1Q==}
 
   '@soundor/core@0.21.0':
     resolution: {integrity: sha512-b4MjZ29+E9e94JOgxR50YF/ezlEdI900joe3Z+kBZsBklXgo8a/KQ6Wqg0m+kofmt9U8l7QMjyv3xpaS/XDpEg==}
 
-  '@soundor/devtools-client@0.21.0':
-    resolution: {integrity: sha512-bpcVUHrzOBwk3MIHI00jXLUeym6AK/y9PX70Cj/04U7aTl3KF1/ytVIFgTawOG491q68Q/rSXXsS1zso1vq7AA==}
+  '@soundor/core@0.21.1':
+    resolution: {integrity: sha512-vEBu69znTIZFgjCB5GodCfs2ZUeo7ooEtSKSbZ+9P4f/GYNMVf0hBg5FWTldjlxaBeRpF9GOlDGY2O8P43xK+w==}
 
-  '@soundor/devtools-protocol@0.21.0':
-    resolution: {integrity: sha512-W2KXU5JYqmhFIa9fBLCSJvfpiXLtQBIL1ONCKFDcBqugSZCD9/Kx2PnLyMytD4KHHNRysjQEPH+f88ejP02q8w==}
+  '@soundor/devtools-client@0.21.1':
+    resolution: {integrity: sha512-1b4RHuti2kB/4vkd7IkHRu5AvGBUgazd+UISHHa1Mi+WO0ctEfksbPnYtWhLg0n498bh+seNDZ2WAdBfJED9Kg==}
 
-  '@soundor/devtools-server@0.21.0':
-    resolution: {integrity: sha512-WBhjERHmotavUYAeTVj+Hqs42iyM+3wp9ExzcXM1wBnE3aCc8z26OIXa7f/663qWYdwfovouevI8GN1l9rzw7w==}
+  '@soundor/devtools-protocol@0.21.1':
+    resolution: {integrity: sha512-5xtiTi5DsDZa02QrFGa4QfUbnSINM0bMeJOyjetIX9vRAj9F6RVWTnfDFk1f2DB0YFcKHadsdOjmuooYqzCNXQ==}
 
-  '@soundor/driver@0.21.0':
-    resolution: {integrity: sha512-hSZleWplC+VzgfF18UZLDXsC7yhPN+EiqG+/6hTH+MmJLRNlEIgOHTD7+HJuZ5Hx3tWPMBNIrMYFGSPA5xuEPw==}
+  '@soundor/devtools-server@0.21.1':
+    resolution: {integrity: sha512-vRKEldJYrj1fJe16YmSz39a2QrohgONgv1ggzI6e88BLac37z3lF772OFLSvGzneqPxTLZhXeTihYpTPyaq+zQ==}
+
+  '@soundor/driver@0.21.1':
+    resolution: {integrity: sha512-kboFRqUqcOWC8KGk8kgNJfr2NmTouYSl3zSLC1TEBRJ6O4Tmms8J0qj31chKHKUhSDUxc0jDFktDujayj5GtPQ==}
     engines: {node: ^22.18.0 || >=24.11.0}
     peerDependencies:
-      '@soundor/vst3-host': ^0.2.3
+      '@soundor/vst3-host': ^0.2.4
     peerDependenciesMeta:
       '@soundor/vst3-host':
         optional: true
 
-  '@soundor/engine@0.12.0':
-    resolution: {integrity: sha512-1a1hGz3Rlyu9n504IYyS5JHPmWgoixfQ9KxB56dS8zbnDTA4qj9Qr4WDqOoUy3tF1zjdyprAUTriwz/LId2YJQ==}
+  '@soundor/engine@0.12.1':
+    resolution: {integrity: sha512-H9Di3W8zZHkGIcdIkuBEmeoQMMn4MDw0GnYwj7XsvL7N7GdTjaK/+6t00iww40aZ6xb3Fr0yR17aUCQb2xloFQ==}
 
   '@soundor/environment@0.21.0':
     resolution: {integrity: sha512-kFJLPGmuCmjJpP9K/I8HIbsIqPYeUi8FRDJSKJsLoGdQ6PMgwXYiDHO9V+IMB0dCxLTlKQKM6vxHc3MoSCzAuw==}
 
+  '@soundor/environment@0.21.1':
+    resolution: {integrity: sha512-wPhstSnCyfSiLZiKmYQMI8fWOm1aHxmhPpm39NbusxUs5JxOXrgyMlOtwrlcla7woWyPw4UkFujvCDTMIFcEag==}
+
   '@soundor/expression@0.21.0':
     resolution: {integrity: sha512-Z3XjSVzk5PyqIN1EZps4Rw09AtH/ypfXKILK5Aw/WUwO+7y7zihcyYoymGeVxvmv77zRyzfo5wuGM4cmPtmguw==}
+
+  '@soundor/expression@0.21.1':
+    resolution: {integrity: sha512-1UrpLJygLS1xShJfrwVOu2MMilTM+8GcrVymdFCXjXYY7RE6SJr4BVhNbUQcOT9zu0z7ivAqh1+jws4tIZaXFg==}
 
   '@soundor/icons@0.3.0':
     resolution: {integrity: sha512-7SS7OFsKNWe1Qzy0nSlwC1czWmZY7qKWsMkznHpZOx7571Lii+cveJtrDlYKgN6Q56Vaf/0KhV0gPHkJ3Xu2kg==}
@@ -1247,21 +1256,24 @@ packages:
       '@soundor/react':
         optional: true
 
-  '@soundor/react@0.21.0':
-    resolution: {integrity: sha512-9PqasyPTEoW0e8ghAk3TRIARe7fYfw+LzkPcLpnU7Pi1v2OmHnp9wRb7wpqG3dNUojhuBhZLQnMIYw0c8iIdJw==}
+  '@soundor/react@0.21.1':
+    resolution: {integrity: sha512-CFhjvzquR3Dd+rIrZsfia5EKIO9Ypa/cFaxmZ1buKrh7P42Q9iz+JdYeEsx3MK1ig9veKrMy5kfoBecJY2HolQ==}
     peerDependencies:
       react: ^19.3.0
 
-  '@soundor/runtime-sdk@0.21.0':
-    resolution: {integrity: sha512-okQ0gHaqPONeCGKcNnl8No1WoJLiLwJHSsd26BglFpZBziMR1ck/pzvMcdey/fxpXvyIgIIQjCe9jVPFf1FHAg==}
+  '@soundor/runtime-sdk@0.21.1':
+    resolution: {integrity: sha512-p5lJ0p3VSf71y7URhFkj5uvoefWwhtKKo8T+oZ8eI1RbyjF4+iq4VMo0O1sNhUWxKyJMoYzG5zO0XfLlIXBFfQ==}
 
   '@soundor/test-runtime@0.21.0':
     resolution: {integrity: sha512-cq4Ov3nYQyLfkumib4pPxrEuXDKyktn1uo3Jc+iPV59m47lgUDi36MGRboBFZSQQgz2yGdQNPWzmbfwC2PKfDg==}
 
-  '@soundor/testing-library@0.21.0':
-    resolution: {integrity: sha512-O+cOEAXtWybKSWPQCo7onq5ETVI5oy027G+1X9XqjZP7wfzXC3em1MTRaHJikT+DYWil9bDS2qcWWo56omLW8A==}
+  '@soundor/test-runtime@0.21.1':
+    resolution: {integrity: sha512-ZOF4THyDvew+iVLmMyk3N4u4APFpJyB9PXL7hAyccl4DdcdooFW7qTEkmtqySMoAs4rE+jJ+RmUV8BsYyfqO0Q==}
+
+  '@soundor/testing-library@0.21.1':
+    resolution: {integrity: sha512-hktLg0j7r0GX5qvhSvbrCfL+z7jzOvnQEhES3cngMnTfXlkAsdT9BGKqT5U2mKZIK5SeOywov8xS9jpXN3O+iQ==}
     peerDependencies:
-      '@soundor/react': ^0.21.0
+      '@soundor/react': ^0.21.1
       react: ^19.3.0
       vitest: ^5.0.3
     peerDependenciesMeta:
@@ -1270,43 +1282,43 @@ packages:
       react:
         optional: true
 
-  '@soundor/vitest@0.21.0':
-    resolution: {integrity: sha512-YWOuzOBgQfNVz5rp6SAgtaoKug657slHUcrm8idtuoezF0lVzs4g/smnHK91u5MwuGiKzCOUR49vF6gPmWFLxQ==}
+  '@soundor/vitest@0.21.1':
+    resolution: {integrity: sha512-fqEszLrsNmqK7dS/RoeEpEvrKXs+J2dhZ5YV6pOpWKW5izHDAyLTfbakd/bnxTnkfw21C5psQjO05pFUomA9sA==}
     peerDependencies:
       vite: ^8.3.2
       vitest: ^5.0.3
 
-  '@soundor/vst3-host-darwin-universal@0.2.3':
-    resolution: {integrity: sha512-Zg6rmypVCK1S/YUl6JXWzRA+08A7RG+imL6VauMxlKIbYiXvHesPs4F1caw7uqjYOIJelJG6UFE9zQK7D5C+pA==}
+  '@soundor/vst3-host-darwin-universal@0.2.4':
+    resolution: {integrity: sha512-+w5p2g9GNW2PtX1Kd5FJ7hm1T2wWZwV6yhwTZaib9ljIFS7/upZufZKkTtf4x30UJZOW1HpSSjN53vLtMHSuwg==}
     cpu: [arm64, x64]
     os: [darwin]
 
-  '@soundor/vst3-host-linux-x64-gnu@0.2.3':
-    resolution: {integrity: sha512-6F46CgA8Dl8OjfvbnpnDrHVlOGELKhQ2l9Vlu5VS8S+Qu3inGZEn5kdHdUvS0TcjQmf1oSK/gY/Z9IiTz0RQ9A==}
+  '@soundor/vst3-host-linux-x64-gnu@0.2.4':
+    resolution: {integrity: sha512-kQmHqIn9VVZVUEXUa8F8/vIvs0/bis1Tb3kvU+LpEs78UuMGuS97yYVipNN7vY7eHyojA/5MZqTEdQPaUhG2jg==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@soundor/vst3-host-win32-x64@0.2.3':
-    resolution: {integrity: sha512-kGbyO3jwwHNn6DlodTN0xtsdG9f4CaCFJQj2+UXavxKmhlCtn98xXFTxmqqEE9AGA9u8brJ/ajQ2eB5tqr9Mmg==}
+  '@soundor/vst3-host-win32-x64@0.2.4':
+    resolution: {integrity: sha512-Xula2mJn/vr+WOsqWGZMUGWvLwEQn7OrRXD30uqaKl+4cEqDKePpP7hxttX0A5V3gXWBmTqXn93hYlGutxxHdQ==}
     cpu: [x64]
     os: [win32]
 
-  '@soundor/vst3-host@0.2.3':
-    resolution: {integrity: sha512-4XorCuRZnm6BlIJ/Uv5oyHyu3NXJmkpSX9DqWFHm6fy0wZU0qlXDOo++MvIqhNzq4D6Bj+aKqyfHpVWuenn6xA==}
+  '@soundor/vst3-host@0.2.4':
+    resolution: {integrity: sha512-HBSiFCJ6OXFAP6LNvZhspQf+A9D2Hz09Uk+Ety5J/CLAKS41r/nCF3yfyglqU2Bqrfqx4vLmbAliqEtq1g7jZQ==}
     engines: {node: ^22.18.0 || >=24.11.0}
     hasBin: true
 
-  '@soundor/vst3-runtime@0.2.0':
-    resolution: {integrity: sha512-20ak1pVP/p4OtHA86fH+eE2T/P50A6DjnUpWAQQxA1/u58bOlF/3LfLYp9Agv68A7iBGSj05CasuGIBU+cquqg==}
+  '@soundor/vst3-runtime@0.2.1':
+    resolution: {integrity: sha512-OiCiw6R0k43l27kWCWuu+t/w1NIyQRKWbInxW5PcwZis6tgtZLHMUDYq4o0/SB+8PAvJRsGf2rIshcYgSM7z7g==}
     peerDependencies:
-      '@soundor/vst3-host': ^0.2.3
-      soundor: ^0.21.0
+      '@soundor/vst3-host': ^0.2.4
+      soundor: ^0.21.1
 
-  '@soundor/web-runtime@0.17.0':
-    resolution: {integrity: sha512-22JklIMEsh2k4V2a9mtho5NMp972j4jbXzSDBzfiFL5sBCIse+ukaBxMQxH9In18OgssC7An8DkcAbOqxVF5tw==}
+  '@soundor/web-runtime@0.18.0':
+    resolution: {integrity: sha512-UQOoxjzab7oHF3EQIKQ7pOX9Hk2QCnI/svhC0SDotmUunoxC17wy3VQH6WQNllwOkX688GC7eBxrJOB7cmR9Ng==}
     peerDependencies:
-      soundor: ^0.21.0
+      soundor: ^0.21.1
 
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
@@ -3070,8 +3082,8 @@ packages:
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
 
-  soundor@0.21.0:
-    resolution: {integrity: sha512-wHub4jYbGl+gPjMgXLnCpaa/iozjmnGanQu9/Q/cFdsvvdn/9POy6l4uk5oYGcF6OIrSqzwMu35kOV1kDyQQjw==}
+  soundor@0.21.1:
+    resolution: {integrity: sha512-fgfsmwdcMiXHXJz59lrQAIzmIXv3vJRgsvpk0c1t1I8YF6ZoTBho2yXLb8yauRDDudYVKaB5fZz5rgwxa0wUfA==}
     engines: {node: ^22.18.0 || >=24.11.0}
     hasBin: true
 
@@ -4191,15 +4203,15 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.1.0': {}
 
-  '@soundor/components@0.5.0(patch_hash=63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
+  '@soundor/components@0.6.0(patch_hash=97b2dae05392e92429ad6ca8600d054cee763ac3900650bae0c4e499da9f9087)(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@soundor/react': 0.21.0(react@19.3.1)
+      '@soundor/react': 0.21.1(react@19.3.1)
       react: 19.3.1
 
-  '@soundor/config@0.21.0':
+  '@soundor/config@0.21.1':
     dependencies:
-      '@soundor/core': 0.21.0
-      '@soundor/expression': 0.21.0
+      '@soundor/core': 0.21.1
+      '@soundor/expression': 0.21.1
       rolldown: 1.3.3
       zod: 4.6.7
 
@@ -4207,113 +4219,126 @@ snapshots:
     dependencies:
       '@soundor/environment': 0.21.0
 
-  '@soundor/devtools-client@0.21.0':
+  '@soundor/core@0.21.1':
+    dependencies:
+      '@soundor/environment': 0.21.1
+
+  '@soundor/devtools-client@0.21.1':
     dependencies:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
 
-  '@soundor/devtools-protocol@0.21.0':
+  '@soundor/devtools-protocol@0.21.1':
     dependencies:
       zod: 4.6.7
 
-  '@soundor/devtools-server@0.21.0':
+  '@soundor/devtools-server@0.21.1':
     dependencies:
       '@fastify/cookie': 11.1.5
       '@fastify/static': 10.1.12
       '@fastify/websocket': 11.3.7
-      '@soundor/devtools-protocol': 0.21.0
+      '@soundor/devtools-protocol': 0.21.1
       fastify: 5.12.8
       ws: 8.23.0
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@soundor/driver@0.21.0(@soundor/vst3-host@0.2.3)':
+  '@soundor/driver@0.21.1(@soundor/vst3-host@0.2.4)':
     dependencies:
-      '@soundor/devtools-protocol': 0.21.0
-      '@soundor/devtools-server': 0.21.0
+      '@soundor/devtools-protocol': 0.21.1
+      '@soundor/devtools-server': 0.21.1
       ws: 8.23.0
       zod: 4.6.7
     optionalDependencies:
-      '@soundor/vst3-host': 0.2.3
+      '@soundor/vst3-host': 0.2.4
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
 
-  '@soundor/engine@0.12.0': {}
+  '@soundor/engine@0.12.1': {}
 
   '@soundor/environment@0.21.0': {}
 
+  '@soundor/environment@0.21.1': {}
+
   '@soundor/expression@0.21.0': {}
 
-  '@soundor/icons@0.3.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
+  '@soundor/expression@0.21.1': {}
+
+  '@soundor/icons@0.3.0(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       react: 19.3.1
     optionalDependencies:
-      '@soundor/react': 0.21.0(react@19.3.1)
+      '@soundor/react': 0.21.1(react@19.3.1)
 
-  '@soundor/react@0.21.0(react@19.3.1)':
+  '@soundor/react@0.21.1(react@19.3.1)':
     dependencies:
       react: 19.3.1
       react-reconciler: 0.34.0(react@19.3.1)
 
-  '@soundor/runtime-sdk@0.21.0':
+  '@soundor/runtime-sdk@0.21.1':
     dependencies:
-      '@soundor/config': 0.21.0
-      '@soundor/core': 0.21.0
-      '@soundor/expression': 0.21.0
+      '@soundor/config': 0.21.1
+      '@soundor/core': 0.21.1
+      '@soundor/expression': 0.21.1
 
   '@soundor/test-runtime@0.21.0':
     dependencies:
       '@soundor/core': 0.21.0
       '@soundor/expression': 0.21.0
 
-  '@soundor/testing-library@0.21.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
+  '@soundor/test-runtime@0.21.1':
     dependencies:
-      '@soundor/test-runtime': 0.21.0
+      '@soundor/core': 0.21.1
+      '@soundor/expression': 0.21.1
+
+  '@soundor/testing-library@0.21.1(@soundor/react@0.21.1(react@19.3.1))(react@19.3.1)(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
+    dependencies:
+      '@soundor/test-runtime': 0.21.1
       vitest: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
     optionalDependencies:
-      '@soundor/react': 0.21.0(react@19.3.1)
+      '@soundor/react': 0.21.1(react@19.3.1)
       react: 19.3.1
 
-  '@soundor/vitest@0.21.0(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
+  '@soundor/vitest@0.21.1(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
     dependencies:
-      '@soundor/config': 0.21.0
-      '@soundor/core': 0.21.0
-      '@soundor/test-runtime': 0.21.0
+      '@soundor/config': 0.21.1
+      '@soundor/core': 0.21.1
+      '@soundor/test-runtime': 0.21.1
       vite: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
       vitest: 5.1.0(@types/node@24.19.2)(vite@8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
-  '@soundor/vst3-host-darwin-universal@0.2.3':
+  '@soundor/vst3-host-darwin-universal@0.2.4':
     optional: true
 
-  '@soundor/vst3-host-linux-x64-gnu@0.2.3':
+  '@soundor/vst3-host-linux-x64-gnu@0.2.4':
     optional: true
 
-  '@soundor/vst3-host-win32-x64@0.2.3':
+  '@soundor/vst3-host-win32-x64@0.2.4':
     optional: true
 
-  '@soundor/vst3-host@0.2.3':
+  '@soundor/vst3-host@0.2.4':
     dependencies:
-      '@soundor/core': 0.21.0
+      '@soundor/core': 0.21.1
     optionalDependencies:
-      '@soundor/vst3-host-darwin-universal': 0.2.3
-      '@soundor/vst3-host-linux-x64-gnu': 0.2.3
-      '@soundor/vst3-host-win32-x64': 0.2.3
+      '@soundor/vst3-host-darwin-universal': 0.2.4
+      '@soundor/vst3-host-linux-x64-gnu': 0.2.4
+      '@soundor/vst3-host-win32-x64': 0.2.4
 
-  '@soundor/vst3-runtime@0.2.0(@soundor/vst3-host@0.2.3)(soundor@0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2))':
+  '@soundor/vst3-runtime@0.2.1(@soundor/vst3-host@0.2.4)(soundor@0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2))':
     dependencies:
-      '@soundor/engine': 0.12.0
-      '@soundor/runtime-sdk': 0.21.0
-      '@soundor/vst3-host': 0.2.3
-      soundor: 0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2)
+      '@soundor/engine': 0.12.1
+      '@soundor/runtime-sdk': 0.21.1
+      '@soundor/vst3-host': 0.2.4
+      soundor: 0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2)
 
-  '@soundor/web-runtime@0.17.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(soundor@0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2))(yaml@2.9.1)':
+  '@soundor/web-runtime@0.18.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(soundor@0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2))(yaml@2.9.1)':
     dependencies:
-      '@soundor/engine': 0.12.0
-      '@soundor/runtime-sdk': 0.21.0
+      '@soundor/engine': 0.12.1
+      '@soundor/runtime-sdk': 0.21.1
       preact: 11.2.0
-      soundor: 0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2)
+      soundor: 0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2)
       vite: 8.3.8(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
     transitivePeerDependencies:
       - '@types/node'
@@ -6307,14 +6332,14 @@ snapshots:
     dependencies:
       atomic-sleep: 1.0.0
 
-  soundor@0.21.0(@soundor/vst3-host@0.2.3)(typescript@7.0.2):
+  soundor@0.21.1(@soundor/vst3-host@0.2.4)(typescript@7.0.2):
     dependencies:
       '@clack/prompts': 1.9.0
-      '@soundor/config': 0.21.0
-      '@soundor/core': 0.21.0
-      '@soundor/devtools-client': 0.21.0
-      '@soundor/devtools-server': 0.21.0
-      '@soundor/driver': 0.21.0(@soundor/vst3-host@0.2.3)
+      '@soundor/config': 0.21.1
+      '@soundor/core': 0.21.1
+      '@soundor/devtools-client': 0.21.1
+      '@soundor/devtools-server': 0.21.1
+      '@soundor/driver': 0.21.1(@soundor/vst3-host@0.2.4)
       citty: 0.2.2
       tsdown: 0.23.7(typescript@7.0.2)
     transitivePeerDependencies:

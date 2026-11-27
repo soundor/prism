@@ -52,6 +52,8 @@ function StereoMeter({ levels }: { levels: PlotSource<[number, number]> }) {
       <LevelMeter
         value={value ?? [undefined, undefined]}
         label="Output level"
+        channelLabels={['left', 'right']}
+        clipResetLabel={(channel) => `Output clip, ${channel}`}
         min={-60}
         max={6}
         fallRate={24}
