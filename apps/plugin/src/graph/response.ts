@@ -1,8 +1,11 @@
-// Display-only response math: the curves the graph draws, from the standard
-// biquad formulas (R. Bristow-Johnson's Audio EQ Cookbook), a first-order
-// section for 6 dB/oct and cascaded Butterworth sections for steeper cuts.
-// Nothing here processes audio. Once the processor filters, the graph should
-// draw the processor's own coefficients instead.
+// The curves the graph draws, from the standard biquad formulas (R.
+// Bristow-Johnson's Audio EQ Cookbook), a first-order section for 6 dB/oct
+// and cascaded Butterworth sections for steeper cuts. The processor
+// (lib/src/filter.rs) filters with the same responses: the fixture that
+// __tests__/response-fixture.spec.ts writes holds the two together, so change
+// both, and rewrite the fixture, when this math changes. The curves are
+// computed at 96 kHz; at 44.1 or 48 kHz the audio falls a little earlier
+// close to 20 kHz, as every bilinear-transform filter does.
 
 import {
   FREQUENCY_MAX,
@@ -13,7 +16,7 @@ import {
 } from '../bands/catalog';
 
 /** The rate the curves are computed at: high enough to keep 20 kHz honest. */
-const SAMPLE_RATE = 96_000;
+export const SAMPLE_RATE = 96_000;
 const NYQUIST_LIMIT = SAMPLE_RATE * 0.49;
 
 /** b0, b1, b2, a0, a1, a2. */
