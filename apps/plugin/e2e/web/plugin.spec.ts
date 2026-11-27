@@ -295,3 +295,118 @@ test('simulated output clips and each clip indicator can be cleared', async ({ p
   await reset.click();
   await expect(reset).toHaveAttribute('aria-pressed', 'false');
 });
+
+test('an empty setup shows how to add a band, and the hint goes with the first band', async ({
+  page,
+}) => {
+  const hint = page.getByText('Double-click anywhere on the graph to add a band');
+  await expect(hint).toBeVisible();
+  await expect(page.getByText('Add a band to start')).toBeVisible();
+  await expect(page.getByText('None yet', { exact: true })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add band' }).click();
+  await expect(hint).toBeHidden();
+  await expect(page.getByText('1/24', { exact: true })).toBeVisible();
+});
+
+test('a marker moves with the arrow keys and Delete removes it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Add band' }).click();
+  const bell = marker(page, 'Band 1, Bell');
+  await expect(bell).toHaveAttribute('aria-valuetext', '1.00 kHz, 0.0 dB, Q 0.707');
+  await expect(bell).toHaveAttribute('aria-description', /up and down the gain/);
+
+  await bell.focus();
+  await bell.press('ArrowUp');
+  await expect(bell).toHaveAttribute('aria-valuetext', /^1\.00 kHz, \+0\.[1-9] dB/);
+  await bell.press('ArrowRight');
+  await expect(bell).not.toHaveAttribute('aria-valuetext', /^1\.00 kHz/);
+  await bell.press('Delete');
+  await expect(bell).toBeHidden();
+  await expect(page.getByText('Add a band to start')).toBeVisible();
+});
+
+test('a dragged rectangle selects the markers inside it', async ({ page }) => {
+  await header(page).getByRole('button', { name: 'Next preset' }).click();
+  const cut = (await marker(page, 'Band 2, Bell').boundingBox())!;
+  const boost = (await marker(page, 'Band 3, Bell').boundingBox())!;
+  const top = Math.min(cut.y, boost.y) - 20;
+  const bottom = Math.max(cut.y + cut.height, boost.y + boost.height) + 20;
+  await page.mouse.move(cut.x - 20, top);
+  await page.mouse.down();
+  await page.mouse.move(boost.x + boost.width + 20, bottom, { steps: 10 });
+  await page.mouse.up();
+
+  await expect(page.getByText('2 selected', { exact: true })).toBeVisible();
+  await expect(page.getByText('Bands 2, 3', { exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Select a band to edit it')).toBeVisible();
+});
+
+test('several bands show their shared values and "Mixed" for the rest', async ({ page }) => {
+  await header(page).getByRole('button', { name: 'Next preset' }).click();
+  await marker(page, 'Band 2, Bell').click();
+  await marker(page, 'Band 4, Notch').click({ modifiers: ['Shift'] });
+
+  await expect(page.getByText('2 selected', { exact: true })).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'Filter type' })).toContainText('Mixed');
+  await expect(page.getByRole('slider', { name: 'Frequency offset', exact: true })).toBeVisible();
+  await expect(page.getByText('Not used by some', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Solo band' })).toBeDisabled();
+  await page.getByRole('button', { name: 'Delete 2 bands' }).click();
+  await expect(marker(page, 'Band 2, Bell')).toBeHidden();
+  await expect(marker(page, 'Band 4, Notch')).toBeHidden();
+  await expect(page.getByText('3/24', { exact: true })).toBeVisible();
+});
+
+test('all 24 slots can be filled, and Add stops there', async ({ page }) => {
+  const add = page.getByRole('button', { name: 'Add band' });
+  for (let i = 0; i < 24; i++) await add.click();
+  await expect(page.getByText('24/24', { exact: true })).toBeVisible();
+  await expect(add).toBeDisabled();
+  await expect(page.getByRole('listbox', { name: 'Bands' }).getByRole('option')).toHaveCount(24);
+  await expect(marker(page, 'Band 24, Bell')).toBeVisible();
+});
+
+test('a bypassed band says so on its marker, its tooltip and in the inspector', async ({
+  page,
+}) => {
+  await page.getByRole('button', { name: 'Add band' }).click();
+  const bell = marker(page, 'Band 1, Bell');
+  await bell.click({ button: 'right' });
+  await page
+    .getByRole('menu', { name: 'Band 1 actions' })
+    .getByRole('menuitem', { name: 'Bypass band' })
+    .click();
+  await expect(bell).toHaveAttribute('aria-valuetext', /bypassed$/);
+
+  await bell.click();
+  await expect(page.getByText('Bypassed', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Band on' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+
+  const box = (await bell.boundingBox())!;
+  await page.mouse.move(box.x - 30, box.y - 30);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+  // Over a marker, Alt shows every setting.
+  await page.keyboard.down('Alt');
+  await expect(page.getByText(/^1 · Bell .* Bypassed$/)).toBeVisible();
+  await page.keyboard.up('Alt');
+});
+
+for (const zoom of [0.75, 1.25, 1.5, 2]) {
+  test(`the editor scales as a whole to ${zoom * 100} %`, async ({ browser }) => {
+    const page = await browser.newPage({ viewport: { width: 1200 * zoom, height: 720 * zoom } });
+    await page.goto('/?embed');
+    await expect(header(page).getByRole('img', { name: 'Soundor Prism' })).toBeVisible();
+    expect(await headerWidth(page)).toBeCloseTo(1200 * zoom, 0);
+
+    // The footer's last control still ends inside the editor.
+    const wide = page.getByRole('radio', { name: '±30', exact: true });
+    const box = (await wide.boundingBox())!;
+    expect(box.y + box.height).toBeLessThanOrEqual(720 * zoom);
+    expect(box.height).toBeGreaterThan(16 * zoom);
+    await page.close();
+  });
+}

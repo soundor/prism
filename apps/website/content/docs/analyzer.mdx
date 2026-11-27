@@ -1,0 +1,34 @@
+---
+title: Analyzer and views
+description: The spectrum analyzer, spectrogram, pitch keyboard and phase view.
+---
+
+The footer below the inspector controls what the graph shows behind the curves. These settings are saved per track and kept when you load a preset.
+
+## Spectrum
+
+**Analyzer** shows the spectrum before the EQ (**Pre**, a line), after it (**Post**, a filled area), both, or neither. Its level scale is on the right of the graph, in dBFS. The pause button freezes the trace so you can study it.
+
+The settings button next to it opens:
+
+| Setting   | Choices                                  |
+| --------- | ---------------------------------------- |
+| FFT size  | 2k, 4k, 8k or 16k points                 |
+| Window    | Hann, Blackman–Harris, Hamming, Flat top |
+| Smoothing | Off, 1/12, 1/6 or 1/3 octave             |
+| Response  | Slow, Medium or Fast                     |
+| Tilt      | 0, 3, 4.5 or 6 dB per octave             |
+| Floor     | −60, −90 or −120 dBFS                    |
+| Peak hold | Off or On                                |
+
+## Spectrogram
+
+The spectrogram button replaces the spectrum with its recent history: frequency across, as on the graph, and time sweeping down over about four seconds. Brighter means louder, from the analyzer's floor up to 0 dBFS.
+
+## Pitch keyboard
+
+The keyboard button adds a piano strip along the frequency axis, with each C labelled, so you can match a band to a note. The keys nearest the selected bands light up.
+
+## Phase
+
+**Display: Phase** switches the gain axis to ±180° and draws the combined phase response of the current filters, with the magnitude curve kept faintly behind it. It shows the filters' math; it is not a measurement.

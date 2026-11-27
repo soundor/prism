@@ -12,11 +12,11 @@ import { released, version } from '../release';
 
 export const Route = createFileRoute('/')({ component: Home });
 
-const bands = [
-  { frequency: '100 Hz', shape: 'Low shelf', color: 'var(--prism-low)' },
-  { frequency: '400 Hz', shape: 'Low-mid bell', color: 'var(--prism-low-mid)' },
-  { frequency: '2 kHz', shape: 'High-mid bell', color: 'var(--prism-high-mid)' },
-  { frequency: '8 kHz', shape: 'High shelf', color: 'var(--prism-high)' },
+const facts = [
+  { value: '24', label: 'Bands', color: 'var(--prism-low)' },
+  { value: '7', label: 'Filter types', color: 'var(--prism-low-mid)' },
+  { value: '±30 dB', label: 'Gain per band', color: 'var(--prism-high-mid)' },
+  { value: 'L R M S', label: 'Per-band channels', color: 'var(--prism-high)' },
 ];
 
 function Home() {
@@ -37,11 +37,11 @@ function Home() {
               Built with Soundor · VST3 and the web
             </a>
             <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-              Soundor Prism, a four-band equalizer
+              Soundor Prism, a parametric equalizer
             </h1>
             <p className="mt-5 max-w-xl text-lg text-balance text-fd-muted-foreground">
-              Shape bass, mids, and treble with four fixed-frequency bands. Switch to Original to
-              hear what changed.
+              Up to 24 bands, shaped right on the response graph, with a spectrum analyzer behind
+              the curves.
             </p>
             <HeroActions />
           </section>
@@ -50,8 +50,9 @@ function Home() {
               <Player />
             </div>
             <p className="mx-auto mt-5 max-w-xl text-center text-sm text-fd-muted-foreground">
-              Press Play below the plugin to start the synth loop. Use the settings button to switch
-              to an audio file from your device.
+              Double-click the graph to add a band, or pick a preset. Press Play below the plugin
+              for the synth loop. Prism is in development: the audio passes through unchanged for
+              now.
             </p>
           </section>
           <section
@@ -75,13 +76,18 @@ function Home() {
               id="bands"
               className="text-center text-2xl font-semibold tracking-tight sm:text-3xl"
             >
-              Four bands, ±12 dB each
+              Every band, every shape
             </h2>
             <dl className="mt-8 mb-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {bands.map(({ frequency, shape, color }) => (
-                <div key={frequency} className="border-t-2 pt-4" style={{ borderColor: color }}>
-                  <dt className="text-2xl font-semibold tracking-tight">{frequency}</dt>
-                  <dd className="mt-1 text-sm text-fd-muted-foreground">{shape}</dd>
+              {facts.map(({ value, label, color }) => (
+                // The label is the term; the value shows first.
+                <div
+                  key={label}
+                  className="flex flex-col-reverse border-t-2 pt-4"
+                  style={{ borderColor: color }}
+                >
+                  <dt className="mt-1 text-sm text-fd-muted-foreground">{label}</dt>
+                  <dd className="text-2xl font-semibold tracking-tight">{value}</dd>
                 </div>
               ))}
             </dl>
@@ -90,7 +96,7 @@ function Home() {
                 icon={<SlidersHorizontal />}
                 title="Controls"
                 href="/docs/controls"
-                description="Set band gains and compare the EQ with the dry signal."
+                description="Add and shape bands, use presets and compare A and B."
               />
               <Card
                 icon={<Globe />}

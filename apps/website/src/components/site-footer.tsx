@@ -41,7 +41,7 @@ export function SiteFooter() {
     <footer className="border-t">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8 text-sm text-fd-muted-foreground">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p>A free four-band equalizer, built with Soundor.</p>
+          <p>A free parametric equalizer, built with Soundor.</p>
           <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
             <Link className={link} to="/docs/$" params={{ _splat: '' }}>
               Docs

@@ -1,13 +1,19 @@
 ---
 title: Getting started
-description: A four-band equalizer for VST3 hosts and the browser.
+description: A 24-band parametric equalizer for VST3 hosts and the browser.
 ---
 
-Prism has a low shelf, two midrange bells, and a high shelf. All four bands start at 0 dB, so the default settings leave your audio unchanged.
+Prism is a parametric equalizer with up to 24 bands. You place and shape bands on a response graph, with a spectrum analyzer behind the curves, and fine-tune them in the inspector below it. A new instance has no bands, so it leaves your audio unchanged.
 
-1. [Play the browser demo](/docs/browser) and start the synth loop.
-2. Turn a band up or down to hear what it changes. See [Controls](/docs/controls) for the four frequencies.
-3. Switch to **Original** to compare with the unprocessed signal, then switch back to **Prism**.
+<Callout title="In development">
+  The editor is complete, but the audio processing is not connected yet: Prism passes audio through
+  unchanged, and its spectrum, spectrogram and level meters show a simulated signal. The curves show
+  what the filters will do.
+</Callout>
+
+1. [Open the browser demo](/docs/browser).
+2. Double-click the graph to add a band, then drag it: across for frequency, up and down for gain. Scroll over it to change its width (Q).
+3. Pick a factory preset from the menu at the top for a starting point. See [Controls](/docs/controls) for everything else.
 
 ## Install the VST3
 
