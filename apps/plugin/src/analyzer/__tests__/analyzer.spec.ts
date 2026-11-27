@@ -4,7 +4,7 @@ import { state } from 'soundor:state';
 import { afterEach, beforeEach, expect, test, vi } from 'vitest';
 
 import { GRID_POINTS, gridFrequencies } from '../../graph/response';
-import { createAnalyzer } from '../analyzer';
+import { createAnalyzer, SPECTROGRAM_BINS } from '../analyzer';
 
 const analyze = vi.fn();
 beforeEach(() => {
@@ -94,4 +94,36 @@ test('freezing holds the spectrum, and nothing is drawn with the analyzer off', 
   state.analyzerMode.set('off');
   publishStream('spectrum', spectrum(-50, -50));
   expect(levels(analyzer.pre)[0]).toBe(-20);
+});
+
+test('draws the spectrogram frames the processor publishes, tilted, while it is shown', () => {
+  const analyzer = createAnalyzer();
+  stop = analyzer.start();
+  const values = () => Array.from(analyzer.spectrogram.get()!.values);
+  publishStream('spectrogram', new Float32Array(SPECTROGRAM_BINS).fill(-30));
+  expect(values().every((db) => db === -120)).toBe(true);
+
+  state.showSpectrogram.set(true);
+  state.analyzerTilt.set(3);
+  const frame = new Float32Array(SPECTROGRAM_BINS).fill(-30);
+  frame[0] = -120;
+  publishStream('spectrogram', frame);
+  const shown = values();
+  // Silence stays at the floor; 1 kHz is where the tilt is 0.
+  expect(shown[0]).toBe(-120);
+  const kilohertz = Math.round(((1000 - 10) / (30_000 - 10)) * (SPECTROGRAM_BINS - 1));
+  expect(shown[kilohertz]).toBeCloseTo(-30, 1);
+  expect(shown[SPECTROGRAM_BINS - 1]).toBeCloseTo(-30 + 3 * Math.log2(30), 3);
+
+  analyzer.setFrozen(true);
+  publishStream('spectrogram', new Float32Array(SPECTROGRAM_BINS).fill(-60));
+  expect(values()[kilohertz]).toBeCloseTo(-30, 1);
+});
+
+test('asks the processor again when the spectrogram is shown or hidden', () => {
+  const analyzer = createAnalyzer();
+  stop = analyzer.start();
+  analyze.mockClear();
+  state.showSpectrogram.set(true);
+  expect(analyze).toHaveBeenLastCalledWith(true);
 });

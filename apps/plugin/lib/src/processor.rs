@@ -3,7 +3,7 @@
 
 use soundor::prelude::*;
 
-use crate::analyzer::{self, Analyzer, SPECTRUM_LENGTH};
+use crate::analyzer::{self, Analyzer, Measured, SPECTRUM_LENGTH};
 use crate::engine::{Engine, Settings};
 use crate::meter::Meter;
 use crate::parameters::{BANDS, BandParameters, band_parameters};
@@ -50,7 +50,7 @@ impl Processor for PluginProcessor {
         } else {
             10f32.powf(ctx.params.input_gain / 20.0)
         };
-        let mut measured = false;
+        let mut measured = Measured::default();
         let mut channels = ctx.audio.channels();
         if let Some(left) = channels.next() {
             let mut right = channels.next();
@@ -60,12 +60,15 @@ impl Processor for PluginProcessor {
             measured = analyzer.capture_post(left, right.as_deref());
         }
         ctx.streams.output_levels.publish(&meter.levels());
-        if measured {
+        if measured.spectrum {
             let spectrum = ctx.streams.spectrum.buffer_mut();
             if spectrum.len() >= SPECTRUM_LENGTH {
                 analyzer.spectrum(&mut spectrum[..SPECTRUM_LENGTH]);
                 ctx.streams.spectrum.commit(SPECTRUM_LENGTH);
             }
+        }
+        if measured.spectrogram {
+            ctx.streams.spectrogram.publish(analyzer.spectrogram());
         }
     }
 

@@ -1,9 +1,7 @@
 import { expect, test } from 'vitest';
 
-import { resample } from '../../analyzer/analyzer';
-import { FREQUENCY_MAX, FREQUENCY_MIN } from '../../bands/catalog';
 import { formatDegrees, phasePoints, wrapDegrees } from '../phase';
-import { gridFrequencies, GRID_POINTS } from '../response';
+import { GRID_POINTS } from '../response';
 
 test('wraps angles to ±180° and labels them', () => {
   expect(wrapDegrees(190)).toBeCloseTo(-170);
@@ -26,14 +24,4 @@ test('breaks the phase curve where it wraps, rather than crossing the plot', () 
   expect(points.length).toBe(GRID_POINTS + 2);
   for (const [, degrees] of points)
     if (!Number.isNaN(degrees)) expect(Math.abs(degrees)).toBeLessThanOrEqual(180);
-});
-
-test('resamples a log-spaced spectrum onto equally spaced bins', () => {
-  const points = Array.from(gridFrequencies, (hz) => [hz, Math.log10(hz)] as [number, number]);
-  const bins = new Float32Array(1001);
-  resample(points, bins);
-  expect(bins[0]).toBeCloseTo(Math.log10(FREQUENCY_MIN), 3);
-  expect(bins[1000]).toBeCloseTo(Math.log10(FREQUENCY_MAX), 3);
-  const middle = FREQUENCY_MIN + (FREQUENCY_MAX - FREQUENCY_MIN) / 2;
-  expect(bins[500]).toBeCloseTo(Math.log10(middle), 2);
 });
