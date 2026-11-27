@@ -101,6 +101,7 @@ export function BandMarker({
           movement={gain ? 'both' : 'x'}
           accessibilityLabel={`Band ${band.slot}, ${filterTypeLabel(band.type)}`}
           describeValue={() => describeBand(band)}
+          accessibilityHint={markerHint(gain)}
           render={(state) => (
             <MarkerFace
               band={band}
@@ -329,4 +330,11 @@ function Outline({
       {...paint}
     />
   );
+}
+
+/** What a marker's keys do, in place of the plot's generic "adjust X, adjust Y". */
+export function markerHint(gain: boolean): string {
+  return gain
+    ? 'Left and right arrows set the frequency, up and down the gain. Delete removes the band.'
+    : 'Left and right arrows set the frequency. Delete removes the band.';
 }

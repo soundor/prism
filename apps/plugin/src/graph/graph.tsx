@@ -1,5 +1,5 @@
 import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/components';
-import { textStyle, useTheme } from '@soundor/components/theme';
+import { ring, textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
 import { Path, Svg } from '@soundor/react/svg';
 import {
@@ -86,6 +86,7 @@ export function Graph({ simulation }: { simulation: Simulation }) {
   const fade = bypassed ? BYPASSED_OPACITY : 1;
 
   const [hovered, setHovered] = useState<number | null>(null);
+  const [focusRing, setFocusRing] = useState(false);
   const [dragging, setDragging] = useState<number | null>(null);
   const markerRefs = useMarkerRefs();
   // Only visible handles take part in graph drags, including group moves.
@@ -101,12 +102,20 @@ export function Graph({ simulation }: { simulation: Simulation }) {
 
   return (
     <View
+      // A press on the background focuses the graph rather than nothing, so
+      // that Escape and undo still reach the editor after a click or a
+      // rectangle selection.
+      focusable
+      accessibilityLabel="Equalizer graph"
+      accessibilityHint="Double-click to add a band. Drag to select bands; Escape clears the selection."
+      onFocusVisibleChange={(event) => setFocusRing(event.focusVisible)}
       style={{
         width: GRAPH_WIDTH,
         height: GRAPH_HEIGHT,
         borderRadius: theme.radius.radiusXl,
         backgroundColor: theme.color.display,
         overflow: 'hidden',
+        ...ring(theme, focusRing),
       }}
     >
       {spectrogram && frame && (

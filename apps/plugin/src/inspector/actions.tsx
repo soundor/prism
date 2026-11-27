@@ -1,5 +1,6 @@
 import { Button, Tooltip } from '@soundor/components';
-import { useTheme } from '@soundor/components/theme';
+import { controlHeight, ring, useTheme } from '@soundor/components/theme';
+import { Pressable } from '@soundor/react';
 import {
   Headphones,
   Power,
@@ -66,7 +67,8 @@ export function Actions({ bands }: { bands: readonly Band[] }) {
 
 /**
  * An icon button that stays pressed: graphite with the icon in `color`
- * while on. The components' Toggle shows a text label only.
+ * while on. The components' Toggle shows a text label only, and a Button
+ * cannot say it is pressed.
  */
 function IconToggle({
   icon: Icon,
@@ -96,29 +98,35 @@ function IconToggle({
         : theme.color.textSecondary;
   return (
     <Tooltip content={tip}>
-      <Button
-        size="md"
-        variant="surface"
-        disabled={disabled}
+      <Pressable
         accessibilityLabel={label}
-        accessibilityState={{ checked }}
+        accessibilityRole="togglebutton"
+        accessibilityState={{ checked, disabled }}
+        disabled={disabled}
         onPress={onPress}
-        leading={<Icon size={14} color={foreground} strokeWidth={1.75} />}
-        styles={{
-          root: {
-            width: 30,
-            paddingHorizontal: 0,
-            justifyContent: 'center',
-            borderWidth: theme.size.borderHairline,
-            borderColor: on
-              ? color
-              : checked === 'mixed'
-                ? theme.color.borderStrong
-                : theme.color.border,
-            backgroundColor: on ? theme.color.selected : theme.color.surfaceElevated,
-          },
-        }}
-      />
+        style={({ hovered, pressed, focusVisible }) => ({
+          width: 30,
+          height: controlHeight(theme, 'md'),
+          borderRadius: theme.radius.radiusMd,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: theme.size.borderHairline,
+          borderColor: on
+            ? color
+            : checked === 'mixed' || (hovered && !disabled)
+              ? theme.color.borderStrong
+              : theme.color.border,
+          backgroundColor: on
+            ? theme.color.selected
+            : pressed && !disabled
+              ? theme.color.surface
+              : theme.color.surfaceElevated,
+          cursor: disabled ? 'default' : 'pointer',
+          ...ring(theme, focusVisible),
+        })}
+      >
+        <Icon size={14} color={foreground} strokeWidth={1.75} />
+      </Pressable>
     </Tooltip>
   );
 }
