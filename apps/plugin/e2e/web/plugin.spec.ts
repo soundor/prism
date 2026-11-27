@@ -103,6 +103,23 @@ test('bands outside a narrow gain range are hidden and do not affect vertical dr
   await expect(shelf).toHaveAttribute('aria-valuetext', /\+3\.4 dB/);
 });
 
+test('graph coordinates stay fixed when the first marker appears', async ({ page }) => {
+  const graph = page.getByLabel('Equalizer response and bands', { exact: true });
+  const box = (await graph.boundingBox())!;
+  const x = box.x + box.width * 0.72;
+  const y = box.y + box.height * 0.3;
+  await page.mouse.dblclick(x, y);
+  const first = marker(page, 'Band 1, Bell');
+  await expect(first).toBeVisible();
+  const value = (await first.getAttribute('aria-valuetext'))!;
+
+  await header(page).getByRole('button', { name: 'Undo', exact: true }).click();
+  await page.getByRole('button', { name: 'Add band' }).click();
+  await expect(first).toBeVisible();
+  await page.mouse.dblclick(x, y);
+  await expect(marker(page, 'Band 2, Bell')).toHaveAttribute('aria-valuetext', value);
+});
+
 test('marker actions open at a secondary click and the filter submenu works from the keyboard', async ({
   page,
 }) => {
