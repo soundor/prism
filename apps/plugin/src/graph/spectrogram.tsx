@@ -17,8 +17,6 @@ import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 const HISTORY = 120;
 /** Frequency columns drawn across the plot. */
 const COLUMNS = 192;
-/** The quietest and loudest levels the colours span, in dBFS. */
-const LEVELS = [-80, -10] as const;
 const OPACITY = 0.85;
 
 export interface Frame {
@@ -41,13 +39,18 @@ export function PlotFrame({ onChange }: { onChange: (frame: Frame) => void }) {
   return null;
 }
 
-/** The spectrogram, laid at `frame` (in the parent's pixels). */
+/**
+ * The spectrogram, laid at `frame` (in the parent's pixels). Its colours span
+ * the analyzer's range, from `floor` to 0 dBFS, as the dBFS axis does.
+ */
 export function SpectrogramLayer({
   source,
   frame,
+  floor,
 }: {
   source: PlotSource<SpectrumFrame>;
   frame: Frame;
+  floor: number;
 }) {
   const theme = useTheme();
   const colorMap = useMemo(() => heatMap(theme), [theme]);
@@ -68,7 +71,7 @@ export function SpectrogramLayer({
         source={source}
         frequencyRange={[FREQUENCY_MIN, FREQUENCY_MAX]}
         frequencyScale="log"
-        amplitudeRange={LEVELS}
+        amplitudeRange={[floor, 0]}
         historyLength={HISTORY}
         bins={COLUMNS}
         orientation="vertical"

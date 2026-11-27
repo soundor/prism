@@ -113,6 +113,7 @@ export function Graph({ simulation }: { simulation: Simulation }) {
         <SpectrogramLayer
           source={simulation.spectrogram}
           frame={{ ...frame, top: frame.top + PLOT_OFFSET }}
+          floor={floorDecibels[floor]}
         />
       )}
       <View
