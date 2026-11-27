@@ -119,6 +119,10 @@ impl Design {
     }
 }
 
+/// Below this, a value in a filter's memory is taken as silence: -300 dB,
+/// far under anything audible, and far above where floats turn denormal.
+const QUIET: f64 = 1e-15;
+
 /// One channel's memory for a band's stages.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct State([[f64; 2]; MAX_STAGES]);
@@ -126,5 +130,37 @@ pub struct State([[f64; 2]; MAX_STAGES]);
 impl State {
     pub fn reset(&mut self) {
         *self = Self::default();
+    }
+
+    /// Keeps the memory sound: clears it when a NaN or an infinity got in
+    /// from the input, which would otherwise stay in it for good, and
+    /// flushes values too small to hear to zero, before a decay into
+    /// silence makes them denormal (slow on some CPUs).
+    pub fn sanitize(&mut self) {
+        let values = self.0.as_flattened_mut();
+        if values.iter().any(|v| !v.is_finite()) {
+            values.fill(0.0);
+            return;
+        }
+        for v in values {
+            if v.abs() < QUIET {
+                *v = 0.0;
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitizing_clears_a_nan_and_flushes_what_is_too_quiet() {
+        let mut state = State([[0.5, 1e-20], [-1e-16, 2e-15], [0.0; 2], [0.0; 2]]);
+        state.sanitize();
+        assert_eq!(state.0, [[0.5, 0.0], [0.0, 2e-15], [0.0; 2], [0.0; 2]]);
+        state.0[3][1] = f64::NAN;
+        state.sanitize();
+        assert_eq!(state.0, [[0.0; 2]; MAX_STAGES]);
     }
 }

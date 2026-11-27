@@ -2,6 +2,7 @@
   "name": "prism-workspace",
   "private": true,
   "scripts": {
+    "bench:rust": "pnpm --filter prism bench:rust",
     "build": "turbo run build",
     "build:web": "turbo run build:web",
     "build:vst3": "pnpm --filter prism build:vst3",
@@ -13,6 +14,7 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "test:rust": "turbo run test:rust",
+    "test:vst3": "pnpm --filter prism build:vst3 && pnpm --filter prism test:vst3",
     "website": "turbo run dev --filter=prism-website"
   },
   "devDependencies": {

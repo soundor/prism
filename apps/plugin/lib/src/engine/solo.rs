@@ -65,9 +65,12 @@ impl Solo {
         solo
     }
 
-    /// The control step: fades toward the soloed slot, and follows its band
-    /// as it glides.
+    /// The control step: keeps the filter's memory sound, fades toward the
+    /// soloed slot, and follows its band as it glides.
     pub(super) fn control(&mut self, bands: &[Band; BANDS], sample_rate: f64) {
+        for state in &mut self.states {
+            state.sanitize();
+        }
         if self.fade.is_silent() {
             self.band = self.target;
             self.states = Default::default();

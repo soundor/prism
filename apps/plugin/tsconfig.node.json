@@ -9,5 +9,12 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["soundor.config.ts", "factory-presets.ts", "playwright.config.ts", "scripts", "e2e"]
+  "include": [
+    "soundor.config.ts",
+    "factory-presets.ts",
+    "playwright.config.ts",
+    "vitest.vst3.config.ts",
+    "scripts",
+    "e2e"
+  ]
 }

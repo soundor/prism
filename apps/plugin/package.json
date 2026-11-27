@@ -6,6 +6,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
+    "bench:rust": "cargo test --release --locked --manifest-path lib/Cargo.toml --test benchmark -- --ignored --nocapture",
     "build:vst3": "soundor build vst3",
     "build:web": "soundor build web",
     "dev:web": "soundor dev web",
@@ -15,6 +16,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:rust": "cargo test --locked --manifest-path lib/Cargo.toml",
+    "test:vst3": "vitest run --config vitest.vst3.config.ts",
     "test:watch": "vitest watch",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tests.json && tsc -p tsconfig.node.json && tsc -p tsconfig.web.json"
   },
