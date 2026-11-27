@@ -26,6 +26,8 @@ pnpm test:e2e       # build the browser plugin and test each editor state in Chr
 pnpm dev            # Soundor browser runtime in development mode
 pnpm website        # run the Fumadocs website at localhost:3000
 pnpm build:vst3     # apps/plugin/.soundor/dist/vst3/Soundor Prism.vst3
+pnpm test:vst3      # build the VST3 and test it in Soundor's headless VST3 host
+pnpm bench:rust     # CPU at the heaviest load: 24 steep gliding bands at 192 kHz, analyzer on
 ```
 
 Before running browser tests for the first time, install Chromium with

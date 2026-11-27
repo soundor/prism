@@ -104,9 +104,13 @@ impl Band {
         self.fade.target = 1.0;
     }
 
-    /// The control step: fades toward what the parameters ask for, glides
-    /// toward their settings, and recomputes the coefficients if they moved.
+    /// The control step: keeps the filter's memory sound, fades toward what
+    /// the parameters ask for, glides toward their settings, and recomputes
+    /// the coefficients if they moved.
     pub(super) fn control(&mut self, sample_rate: f64, glide: f64) {
+        for state in &mut self.states {
+            state.sanitize();
+        }
         let audible = self.target.audible();
         if self.fade.is_silent() {
             if audible {

@@ -37,6 +37,8 @@ jobs:
       - uses: ./.github/actions/vst3
         with:
           platform: ${{ matrix.platform }}
+      # The built plugin in Soundor's headless VST3 host.
+      - run: pnpm --filter prism test:vst3
 
   browser:
     name: Browser (e2e)
