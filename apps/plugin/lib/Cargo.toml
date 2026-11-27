@@ -5,6 +5,8 @@ edition = "2024"
 publish = false
 
 [dependencies]
+fundsp = { version = "0.23", default-features = false, features = ["std"] }
+rustfft = "6.4"
 soundor = { path = "../.soundor/generated/rust/soundor" }
 
 [profile.dev]
