@@ -9,6 +9,7 @@ import { View } from '@soundor/react';
 import { useLayoutEffect, useMemo } from 'react';
 
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
+import { hexToOklab, mixOklab } from './oklab';
 
 // The spectrogram view: the spectrum's history under the curves, in place of
 // the spectrum. Frequency runs across, as on the graph, and time down.
@@ -85,37 +86,28 @@ export function SpectrogramLayer({
  * A sequential ramp in Prism's purple: from the graph's ground, so that
  * silence disappears into it, through dark violets that keep quiet material
  * unobtrusive, to a near-white lilac for the loudest. Lightness rises at
- * every stop, so louder always reads as brighter.
+ * every stop, so louder always reads as brighter; blended in OKLab, so that
+ * it rises evenly between the stops too.
  */
 export function heatMap(theme: Theme): (fraction: number) => string {
-  const stops: readonly [number, string][] = [
-    [0, theme.color.display],
-    [1 / 7, '#20192f'],
-    [2 / 7, '#35234f'],
-    [3 / 7, '#56367c'],
-    [4 / 7, '#8654b5'],
-    [5 / 7, '#b78adf'],
-    [6 / 7, '#dfc1f1'],
-    [1, '#fff1fa'],
-  ];
+  const stops = (
+    [
+      [0, theme.color.display],
+      [1 / 7, '#20192f'],
+      [2 / 7, '#35234f'],
+      [3 / 7, '#56367c'],
+      [4 / 7, '#8654b5'],
+      [5 / 7, '#b78adf'],
+      [6 / 7, '#dfc1f1'],
+      [1, '#fff1fa'],
+    ] as const
+  ).map(([at, hex]) => [at, hexToOklab(hex)] as const);
   return (fraction) => {
     const n = Math.min(1, Math.max(0, fraction));
     let i = 1;
     while (i < stops.length - 1 && stops[i]![0] < n) i++;
     const [p0, c0] = stops[i - 1]!;
     const [p1, c1] = stops[i]!;
-    return mix(c0, c1, (n - p0) / (p1 - p0));
+    return mixOklab(c0, c1, (n - p0) / (p1 - p0));
   };
-}
-
-function mix(from: string, to: string, t: number): string {
-  const a = parseInt(from.slice(1), 16);
-  const b = parseInt(to.slice(1), 16);
-  const channel = (shift: number) => {
-    const x = (a >> shift) & 255;
-    const y = (b >> shift) & 255;
-    return Math.round(x + (y - x) * t);
-  };
-  const hex = (channel(16) << 16) | (channel(8) << 8) | channel(0);
-  return `#${hex.toString(16).padStart(6, '0')}`;
 }
