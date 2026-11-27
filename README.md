@@ -10,7 +10,7 @@ Prism is a parametric equalizer built with [Soundor](https://soundor.dev), for V
 - A pre and post spectrum analyzer with freeze and settings, a spectrogram, a pitch keyboard and a phase view.
 - One 1200 × 720 layout, scaled as a whole from 75 % to 200 %.
 
-**Status:** the editor is complete, and the Rust processor is a working EQ: every band filters its channel (Stereo, Left, Right, Mid or Side) as the curves draw it, with solo, bypass and input and output gain, and every change smoothed so nothing clicks. The analyzer and meters still show a simulated signal. Sessions saved with the earlier four-band version do not load their settings.
+**Status:** the editor is complete, and the Rust processor is a working EQ: every band filters its channel (Stereo, Left, Right, Mid or Side) as the curves draw it, with solo, bypass and input and output gain, and every change smoothed so nothing clicks. The output meter reads the processed audio; the analyzer still shows a simulated signal. Sessions saved with the earlier four-band version do not load their settings.
 
 See the [docs](apps/website/content/docs) for the controls and keyboard shortcuts.
 

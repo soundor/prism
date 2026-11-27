@@ -169,3 +169,34 @@ fn processing_does_not_allocate() {
     processor.process(&input);
     assert_eq!(processor.allocations(), 0);
 }
+
+#[test]
+fn the_meter_reads_the_output_peak_of_each_channel() {
+    let mut processor = TestProcessor::<PluginProcessor>::new()
+        .sample_rate(RATE)
+        .block_size(256)
+        .channels(2)
+        .parameter("outputGain", -6.0)
+        .build();
+    let left = vec![0.5f32; 1024];
+    let right = vec![0.0f32; 1024];
+    processor.process(&[&left, &right]);
+    let levels = processor
+        .stream_buffer::<f32>("outputLevels")
+        .expect("levels published");
+    // 0.5 is -6 dBFS, and the output gain takes 6 dB more.
+    assert!((levels[0] - -12.0).abs() < 0.05, "{levels:?}");
+    assert_eq!(levels[1], -120.0);
+}
+
+#[test]
+fn a_mono_meter_shows_its_one_channel_on_both_sides() {
+    let mut processor = TestProcessor::<PluginProcessor>::new()
+        .sample_rate(RATE)
+        .channels(1)
+        .build();
+    processor.process(&[&[0.25f32; 512]]);
+    let levels = processor.stream_buffer::<f32>("outputLevels").unwrap();
+    assert_eq!(levels[0], levels[1]);
+    assert!((levels[0] - -12.04).abs() < 0.01, "{levels:?}");
+}

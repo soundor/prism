@@ -4,7 +4,7 @@ import { expect, test, vi } from 'vitest';
 
 import { createSimulation } from '../simulation';
 
-test('freezing holds the spectrum while the meters continue to respond', () => {
+test('freezing holds the spectrum', () => {
   vi.useFakeTimers();
   const simulation = createSimulation();
   const stop = simulation.start();
@@ -14,7 +14,6 @@ test('freezing holds the spectrum while the meters continue to respond', () => {
     parameters.outputGain.set(24);
     vi.advanceTimersByTime(66);
     expect(simulation.pre.get()).toBe(before);
-    expect(simulation.meters.get()?.every((db) => db >= 0)).toBe(true);
 
     simulation.setFrozen(false);
     vi.advanceTimersByTime(33);

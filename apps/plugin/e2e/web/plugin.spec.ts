@@ -279,8 +279,16 @@ test('the display switches to phase, and the spectrogram and pitch keyboard togg
   await expect(page.getByRole('img', { name: 'Musical pitch keyboard' })).toBeHidden();
 });
 
-test('simulated output clips and each clip indicator can be cleared', async ({ page }) => {
-  await expect(page.getByRole('progressbar', { name: 'Output level, left' })).toBeVisible();
+test('the meter shows the output, which clips, and each clip indicator can be cleared', async ({
+  page,
+}) => {
+  const level = page.getByRole('progressbar', { name: 'Output level, left' });
+  await expect(level).toBeVisible();
+  await page.getByRole('button', { name: 'Play' }).click();
+  // The demo loop peaks at about -12 dBFS.
+  await expect
+    .poll(async () => Number(await level.getAttribute('aria-valuenow')))
+    .toBeGreaterThan(-40);
   const reset = page.getByRole('button', { name: 'Output clip, left' });
   const gain = page.getByRole('slider', { name: 'Output gain', exact: true });
   await gain.dblclick();
@@ -291,6 +299,7 @@ test('simulated output clips and each clip indicator can be cleared', async ({ p
   await gain.dblclick();
   await entry.fill('0');
   await entry.press('Enter');
+  await page.getByRole('button', { name: 'Stop' }).click();
   await reset.click();
   await expect(reset).toHaveAttribute('aria-pressed', 'false');
 });

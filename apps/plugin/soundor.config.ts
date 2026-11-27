@@ -231,6 +231,12 @@ export default defineSoundorConfig({
       DisplayMode: { enum: ['magnitude', 'phase'] },
       DisplayRange: { enum: ['db3', 'db6', 'db12', 'db24', 'db30'] },
     },
+    // What the processor measures, sent to the editor.
+    streams: {
+      // The output's peak level per channel (left, right), in dBFS, held
+      // over the last 50 ms so that a frame of the editor misses none.
+      outputLevels: { type: 'buffer<float32>', maxLength: 2 },
+    },
   },
   // Saved with the DAW project. Field names are persistent identities.
   state: {

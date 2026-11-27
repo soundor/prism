@@ -1,12 +1,12 @@
-import { LevelMeter, ValueField, type PlotSource } from '@soundor/components';
+import { LevelMeter, ValueField } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
-import { Text, View } from '@soundor/react';
-import { useSyncExternalStore } from 'react';
+import { Text, View, useNativeStream } from '@soundor/react';
+import { streams } from 'soundor:native';
 import { parameters } from 'soundor:parameters';
 
 import { GRAPH_HEIGHT, METER_WIDTH } from '../app/layout';
 
-export function MeterColumn({ levels }: { levels: PlotSource<[number, number]> }) {
+export function MeterColumn() {
   return (
     <View
       style={{
@@ -19,7 +19,7 @@ export function MeterColumn({ levels }: { levels: PlotSource<[number, number]> }
       }}
     >
       <Gain input />
-      <StereoMeter levels={levels} />
+      <StereoMeter />
       <Gain input={false} />
     </View>
   );
@@ -43,10 +43,12 @@ function Gain({ input }: { input: boolean }) {
   );
 }
 
-function StereoMeter({ levels }: { levels: PlotSource<[number, number]> }) {
+/** The output's level, as the processor measures it: left and right, in dBFS. */
+function StereoMeter() {
   const theme = useTheme();
-  const value = useSyncExternalStore(levels.subscribe, levels.get);
-  const peak = value ? Math.max(...value) : -60;
+  const levels = useNativeStream(streams.outputLevels);
+  const value = levels && levels.length === 2 ? [levels[0]!, levels[1]!] : undefined;
+  const peak = value ? Math.max(-60, ...value) : -60;
   return (
     <View style={{ alignItems: 'center', gap: 9 }}>
       <LevelMeter
