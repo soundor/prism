@@ -1,18 +1,20 @@
 //! The spectrum analyzer: what goes into the EQ and what comes out, measured
-//! with an FFT about 60 times a second and read at the graph's grid
-//! frequencies.
+//! with an FFT about 60 times a second, for the spectrum and the
+//! spectrogram.
 //!
 //! Both signals are mixed to mono and kept in rings as long as the largest
-//! FFT. Every hop, the latest stretch of each is windowed and transformed;
-//! each grid point reads the bins around it (`grid`), and its power is
-//! averaged over time at the speed the settings ask for. A full-scale sine
+//! FFT. Every hop, the latest stretch of each is windowed and transformed.
+//! For the spectrum, each of the graph's grid points reads the bins around
+//! it (`grid`), and its power is averaged over time at the speed the
+//! settings ask for. For the spectrogram, the post frame is read as it is
+//! at equally spaced bins, at the FFT's own resolution. A full-scale sine
 //! reads 0 dBFS.
 //!
-//! What the editor does to the spectrum for display (octave smoothing,
-//! tilt, the floor, peak hold, freezing) it does itself.
+//! What the editor does for display (octave smoothing, tilt, the floor,
+//! peak hold, freezing) it does itself.
 //!
 //! - `window`: the windows a frame is shaped with.
-//! - `grid`: the grid frequencies, and where each reads the bins.
+//! - `grid`: the frequencies published at, and where each reads the bins.
 
 mod grid;
 mod window;
@@ -22,8 +24,8 @@ use std::sync::Arc;
 use rustfft::num_complex::Complex;
 use rustfft::{Fft, FftPlanner};
 
-pub use grid::GRID_POINTS;
 use grid::Reading;
+pub use grid::{GRID_POINTS, SPECTROGRAM_BINS};
 pub use window::Window;
 
 /// The FFT sizes the settings offer, by option index of `AnalyzerFftSize`.
@@ -39,29 +41,45 @@ pub const SILENCE: f32 = -120.0;
 /// Values in a published spectrum: the pre spectrum, then the post one.
 pub const SPECTRUM_LENGTH: usize = 2 * GRID_POINTS;
 
-/// What the editor asks for, as the controller hands it over: each setting
-/// its option index.
+/// In the `analyzer` resource's last value: measure the spectrum.
+pub const SPECTRUM: u32 = 1;
+/// In the `analyzer` resource's last value: measure the spectrogram.
+pub const SPECTROGRAM: u32 = 2;
+
+/// What the editor asks for, as the controller hands it over.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Settings {
     pub size: usize,
     pub window: Window,
-    /// The time constant of the averaging, in seconds.
+    /// The time constant of the spectrum's averaging, in seconds.
     pub speed: f64,
+    pub spectrum: bool,
+    pub spectrogram: bool,
 }
 
 impl Settings {
-    /// The settings in the `analyzer` resource: FFT size, window and speed,
-    /// then 1 to analyze; `None` while there is nothing to analyze for.
+    /// The settings in the `analyzer` resource: the option indices of FFT
+    /// size, window and speed, then [`SPECTRUM`] and [`SPECTROGRAM`] as
+    /// flags; `None` while there is nothing to measure.
     pub fn decode(resource: Option<&[u32]>) -> Option<Self> {
-        let &[size, window, speed, enabled] = resource? else {
+        let &[size, window, speed, flags] = resource? else {
             return None;
         };
-        (enabled != 0).then(|| Self {
+        (flags & (SPECTRUM | SPECTROGRAM) != 0).then(|| Self {
             size: SIZES[(size as usize).min(SIZES.len() - 1)],
             window: Window::from_index(window),
             speed: SPEEDS[(speed as usize).min(SPEEDS.len() - 1)],
+            spectrum: flags & SPECTRUM != 0,
+            spectrogram: flags & SPECTROGRAM != 0,
         })
     }
+}
+
+/// What a block measured, to publish.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Measured {
+    pub spectrum: bool,
+    pub spectrogram: bool,
 }
 
 pub struct Analyzer {
@@ -86,6 +104,9 @@ pub struct Analyzer {
     levels: [[f64; GRID_POINTS]; 2],
     /// How far an average moves toward a new frame.
     smoothing: f64,
+    spectrogram_readings: Vec<Reading>,
+    /// The latest post frame at the spectrogram's bins, in dBFS.
+    spectrogram: Vec<f32>,
 }
 
 impl Analyzer {
@@ -114,6 +135,8 @@ impl Analyzer {
             readings: [Reading::Beyond; GRID_POINTS],
             levels: [[0.0; GRID_POINTS]; 2],
             smoothing: 1.0,
+            spectrogram_readings: vec![Reading::Beyond; SPECTROGRAM_BINS],
+            spectrogram: vec![SILENCE; SPECTROGRAM_BINS],
         }
     }
 
@@ -121,6 +144,7 @@ impl Analyzer {
     pub fn reset(&mut self) {
         self.rings.iter_mut().for_each(|ring| ring.fill(0.0));
         self.levels = [[0.0; GRID_POINTS]; 2];
+        self.spectrogram.fill(SILENCE);
         self.since = 0;
     }
 
@@ -134,9 +158,16 @@ impl Analyzer {
             let old = self.settings;
             if old.is_none_or(|old| old.size != new.size || old.window != new.window) {
                 self.window_sum = new.window.fill(&mut self.window[..new.size]);
-                grid::readings(new.size, self.sample_rate, &mut self.readings);
+                let (size, rate) = (new.size, self.sample_rate);
+                grid::readings(size, rate, grid::frequency, &mut self.readings);
+                grid::readings(
+                    size,
+                    rate,
+                    grid::bin_frequency,
+                    &mut self.spectrogram_readings,
+                );
             }
-            if old.is_none() {
+            if old.is_none_or(|old| !old.spectrum) {
                 // Start from what is heard now, rather than rising from silence.
                 self.smoothing = 1.0;
             }
@@ -154,34 +185,45 @@ impl Analyzer {
         }
     }
 
-    /// Takes in the block the EQ put out, and measures a spectrum if one is
-    /// due: returns whether there is a new one to publish.
-    pub fn capture_post(&mut self, left: &[f32], right: Option<&[f32]>) -> bool {
+    /// Takes in the block the EQ put out, and measures if a frame is due:
+    /// returns what there is new to publish.
+    pub fn capture_post(&mut self, left: &[f32], right: Option<&[f32]>) -> Measured {
         for i in 0..left.len() {
             self.rings[1][self.write] = mono(left, right, i);
             self.write = (self.write + 1) % MAX_SIZE;
         }
         self.since += left.len();
         if self.since < self.hop {
-            return false;
+            return Measured::default();
         }
         let hops = self.since / self.hop;
         self.since %= self.hop;
         let Some(settings) = self.settings else {
-            return false;
+            return Measured::default();
         };
-        let target =
-            1.0 - (-((hops * self.hop) as f64) / (settings.speed * self.sample_rate)).exp();
-        let amount = std::mem::replace(&mut self.smoothing, target);
-        for signal in 0..2 {
-            self.measure(signal, settings.size, amount);
+        if settings.spectrum {
+            let target =
+                1.0 - (-((hops * self.hop) as f64) / (settings.speed * self.sample_rate)).exp();
+            let amount = std::mem::replace(&mut self.smoothing, target);
+            self.transform(0, settings.size);
+            self.average(0, amount);
+            self.transform(1, settings.size);
+            self.average(1, amount);
+        } else {
+            self.transform(1, settings.size);
         }
-        true
+        if settings.spectrogram {
+            self.read_spectrogram();
+        }
+        Measured {
+            spectrum: settings.spectrum,
+            spectrogram: settings.spectrogram,
+        }
     }
 
-    /// One frame of `signal` (0 pre, 1 post): its spectrum at the grid,
-    /// moved `amount` of the way into the averages.
-    fn measure(&mut self, signal: usize, size: usize, amount: f64) {
+    /// The latest `size` samples of `signal` (0 pre, 1 post), windowed and
+    /// transformed into `frame`.
+    fn transform(&mut self, signal: usize, size: usize) {
         let ring = &self.rings[signal];
         let start = (self.write + MAX_SIZE - size) % MAX_SIZE;
         for (i, (sample, w)) in self.frame[..size].iter_mut().zip(&self.window).enumerate() {
@@ -189,33 +231,63 @@ impl Analyzer {
         }
         let plan = &self.plans[SIZES.iter().position(|&s| s == size).unwrap_or(0)];
         plan.process_with_scratch(&mut self.frame[..size], &mut self.scratch);
+    }
 
-        // A sine of amplitude A at a bin's centre gives |X| = A·Σw/2.
-        let scale = 2.0 / self.window_sum;
-        let frame = &self.frame;
-        let power = |bin: usize| {
-            let p = (frame[bin].norm() * scale).powi(2);
-            if p.is_finite() { p } else { 0.0 }
-        };
-        for (level, reading) in self.levels[signal].iter_mut().zip(&self.readings) {
-            let p = match *reading {
-                Reading::Loudest { first, last } => (first..=last).map(power).fold(0.0, f64::max),
-                Reading::Between { bin, fraction } => {
-                    power(bin) + fraction * (power(bin + 1) - power(bin))
-                }
-                Reading::Beyond => 0.0,
-            };
+    /// The power of the frame's `bin`, scaled so that a full-scale sine at
+    /// a bin's centre is 1: such a sine gives |X| = Σw/2.
+    fn power(&self, bin: usize) -> f64 {
+        let p = (self.frame[bin].norm() * 2.0 / self.window_sum).powi(2);
+        if p.is_finite() { p } else { 0.0 }
+    }
+
+    /// The frame's power as `reading` reads it.
+    fn read(&self, reading: Reading) -> f64 {
+        match reading {
+            Reading::Loudest { first, last } => (first..=last)
+                .map(|bin| self.power(bin))
+                .fold(0.0, f64::max),
+            Reading::Between { bin, fraction } => {
+                let low = self.power(bin);
+                low + fraction * (self.power(bin + 1) - low)
+            }
+            Reading::Beyond => 0.0,
+        }
+    }
+
+    /// The frame, of `signal`, at the grid, moved `amount` of the way into
+    /// its averages.
+    fn average(&mut self, signal: usize, amount: f64) {
+        for i in 0..GRID_POINTS {
+            let p = self.read(self.readings[i]);
+            let level = &mut self.levels[signal][i];
             *level += amount * (p - *level);
+        }
+    }
+
+    /// The frame, of the post signal, at the spectrogram's bins.
+    fn read_spectrogram(&mut self) {
+        for i in 0..SPECTROGRAM_BINS {
+            self.spectrogram[i] = decibels(self.read(self.spectrogram_readings[i]));
         }
     }
 
     /// The latest spectra, in dBFS: the pre one, then the post one, into
     /// the first [`SPECTRUM_LENGTH`] values of `into`.
     pub fn spectrum(&self, into: &mut [f32]) {
-        for (value, level) in into.iter_mut().zip(self.levels.iter().flatten()) {
-            *value = ((10.0 * level.log10()) as f32).max(SILENCE);
+        for (value, &level) in into.iter_mut().zip(self.levels.iter().flatten()) {
+            *value = decibels(level);
         }
     }
+
+    /// The latest spectrogram frame: the post signal at
+    /// [`SPECTROGRAM_BINS`] equally spaced frequencies, in dBFS.
+    pub fn spectrogram(&self) -> &[f32] {
+        &self.spectrogram
+    }
+}
+
+fn decibels(power: f64) -> f32 {
+    ((10.0 * power.log10()) as f32).max(SILENCE)
 }
 
 #[inline]

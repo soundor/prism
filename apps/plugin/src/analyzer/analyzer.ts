@@ -5,11 +5,12 @@ import { state } from 'soundor:state';
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 import { GRID_POINTS, gridFrequencies, toPoints } from '../graph/response';
 
-// The analyzer's traces, from the spectra the processor measures (see
-// lib/src/analyzer): it publishes the pre and post spectrum at the graph's
-// grid frequencies, already averaged at the chosen speed, about 60 times a
-// second. Here they are smoothed across frequency, tilted, held at their
-// peaks and frozen, as the analyzer settings ask.
+// The analyzer's traces and the spectrogram, from what the processor
+// measures (see lib/src/analyzer) about 60 times a second: the pre and post
+// spectrum at the graph's grid frequencies, already averaged at the chosen
+// speed, and the latest post frame at the FFT's own resolution. Here the
+// spectra are smoothed across frequency, tilted, held at their peaks and
+// frozen, as the analyzer settings ask; the spectrogram is tilted and frozen.
 
 /** Grid points on each side averaged, per smoothing setting (320 points span 11.6 octaves). */
 const smoothingPoints = { off: 0, oct12: 1, oct6: 2, oct3: 5 };
@@ -22,6 +23,12 @@ const SILENCE = -120;
  * FFT's are: about 7 Hz apart, so that the lowest octaves keep some detail.
  */
 export const SPECTROGRAM_BINS = 4096;
+/** Each spectrogram bin's octaves from 1 kHz, for the tilt. */
+const binOctaves = Float32Array.from({ length: SPECTROGRAM_BINS }, (_, i) =>
+  Math.log2(
+    (FREQUENCY_MIN + ((FREQUENCY_MAX - FREQUENCY_MIN) * i) / (SPECTROGRAM_BINS - 1)) / 1000,
+  ),
+);
 /** The settings the processor measures with: a change is passed on to it. */
 const processorSettings = [
   state.analyzerMode,
@@ -77,7 +84,7 @@ export function createAnalyzer() {
   const postBand = { lower: initial(), upper: postPoints };
   const postFill = channel<PlotBandSamples>(postBand);
   const peak = channel<PlotSamples>({ points: peakPoints });
-  // The post spectrum (the pre one while bypassed), resampled to linear bins.
+  // The post frame (the pre one while bypassed), tilted.
   const frame: SpectrumFrame = {
     values: new Float32Array(SPECTROGRAM_BINS).fill(SILENCE),
     frequencyRange: [FREQUENCY_MIN, FREQUENCY_MAX],
@@ -90,7 +97,7 @@ export function createAnalyzer() {
     const elapsed = lastTime === null ? 0 : Math.max(0, now - lastTime);
     lastTime = now;
     if (frozen || spectrum.length < 2 * GRID_POINTS) return;
-    if (state.analyzerMode.get() === 'off' && !state.showSpectrogram.get()) return;
+    if (state.analyzerMode.get() === 'off') return;
     const width = smoothingPoints[state.analyzerSmoothing.get()];
     const tilt = state.analyzerTilt.get();
     const hold = state.analyzerPeakHold.get();
@@ -112,10 +119,18 @@ export function createAnalyzer() {
     post.publish({ points: postPoints });
     postFill.publish(postBand);
     peak.publish({ points: peakPoints });
-    if (state.showSpectrogram.get()) {
-      resample(postPoints, frame.values as Float32Array);
-      spectrogram.publish(frame);
+  }
+
+  function showFrame(values: Float32Array) {
+    if (frozen || !state.showSpectrogram.get()) return;
+    const tilt = state.analyzerTilt.get();
+    const into = frame.values as Float32Array;
+    const count = Math.min(values.length, SPECTROGRAM_BINS);
+    for (let i = 0; i < count; i++) {
+      const level = values[i]!;
+      into[i] = level <= SILENCE ? SILENCE : level + tilt * binOctaves[i]!;
     }
+    spectrogram.publish(frame);
   }
 
   return {
@@ -126,6 +141,8 @@ export function createAnalyzer() {
     spectrogram: spectrogram.source,
     /** Shows `spectrum` as if the processor had just published it, at `now` seconds. */
     show,
+    /** Shows a spectrogram frame as if the processor had just published it. */
+    showFrame,
     setFrozen(value: boolean) {
       frozen = value;
     },
@@ -137,26 +154,13 @@ export function createAnalyzer() {
       const latest = streams.spectrum.get();
       if (latest) show(latest);
       stops.push(streams.spectrum.subscribe((spectrum) => show(spectrum)));
+      stops.push(streams.spectrogram.subscribe(showFrame));
       return () => {
         for (const stop of stops) stop();
         analyze(false);
       };
     },
   };
-}
-
-/** Log-spaced [Hz, dB] points, linearly interpolated onto equally spaced bins. */
-export function resample(points: readonly (readonly [number, number])[], into: Float32Array) {
-  const step = (FREQUENCY_MAX - FREQUENCY_MIN) / (into.length - 1);
-  let j = 0;
-  for (let i = 0; i < into.length; i++) {
-    const hz = FREQUENCY_MIN + i * step;
-    while (j < points.length - 2 && points[j + 1]![0] < hz) j++;
-    const [x0, y0] = points[j]!;
-    const [x1, y1] = points[j + 1]!;
-    const t = Math.min(1, Math.max(0, (hz - x0) / (x1 - x0)));
-    into[i] = y0 + (y1 - y0) * t;
-  }
 }
 
 export type Analyzer = ReturnType<typeof createAnalyzer>;

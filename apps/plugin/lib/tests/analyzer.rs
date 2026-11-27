@@ -1,7 +1,7 @@
 //! The analyzer as the editor drives it: the controller hands the processor
 //! the settings in state, and the processor publishes spectra.
 
-use prism::analyzer::{GRID_POINTS, SILENCE};
+use prism::analyzer::{GRID_POINTS, SILENCE, SPECTROGRAM_BINS};
 use prism::{PluginController, PluginProcessor};
 use soundor::NativeMethods;
 use soundor::testing::{CountingAllocator, TestController, TestProcessor};
@@ -123,21 +123,68 @@ fn nothing_is_analyzed_with_the_analyzer_off() {
     assert!(processor.stream_buffer::<f32>("spectrum").is_none());
 }
 
+/// The spectrogram bin nearest `frequency`.
+fn bin(frequency: f64) -> usize {
+    ((frequency - 10.0) / (30_000.0 - 10.0) * (SPECTROGRAM_BINS - 1) as f64).round() as usize
+}
+
 #[test]
-fn the_spectrogram_is_measured_with_the_analyzer_off() {
+fn the_spectrogram_alone_is_measured_with_the_analyzer_off() {
     let mut processor = processor(&[]);
     open(
         &processor,
         &[("analyzerMode", "\"off\""), ("showSpectrogram", "true")],
     );
-    let (_, post) = spectra(&mut processor, &sine(1000.0, 0.5, RATE as usize / 2));
-    // Either of the two points around 1 kHz may hold the bin nearest it.
-    let at = point(1000.0);
-    let level = post[at - 1..=at + 1]
+    let input = sine(1000.0, 0.5, 9600);
+    processor.process(&[&input, &input]);
+    assert!(processor.stream_buffer::<f32>("spectrum").is_none());
+    let frame = processor
+        .stream_buffer::<f32>("spectrogram")
+        .expect("a frame");
+    assert_eq!(frame.len(), SPECTROGRAM_BINS);
+    let at = bin(1000.0);
+    let level = frame[at - 1..=at + 1]
         .iter()
         .copied()
         .fold(SILENCE, f32::max);
     assert!(level > -8.0, "{level}");
+    assert!(frame[bin(5000.0)] < -60.0, "{}", frame[bin(5000.0)]);
+}
+
+#[test]
+fn the_spectrogram_has_the_ffts_resolution() {
+    let mut processor = processor(&[]);
+    open(
+        &processor,
+        &[
+            ("showSpectrogram", "true"),
+            ("analyzerFftSize", "\"fft16384\""),
+        ],
+    );
+    // Two tones 30 Hz apart, at 5 kHz: one grid point of the spectrum
+    // spans 125 Hz there, but a 16k FFT's bins are 2.9 Hz apart.
+    let input: Vec<f32> = sine(5000.0, 0.25, 24_000)
+        .iter()
+        .zip(sine(5030.0, 0.25, 24_000))
+        .map(|(a, b)| a + b)
+        .collect();
+    processor.process(&[&input, &input]);
+    let frame = processor.stream_buffer::<f32>("spectrogram").unwrap();
+    let (low, middle, high) = (frame[bin(5000.0)], frame[bin(5015.0)], frame[bin(5030.0)]);
+    assert!(
+        middle < low - 10.0 && middle < high - 10.0,
+        "{low} {middle} {high}"
+    );
+}
+
+#[test]
+fn the_spectrogram_is_not_measured_while_hidden() {
+    let mut processor = processor(&[]);
+    open(&processor, &[]);
+    let input = sine(1000.0, 0.5, 9600);
+    processor.process(&[&input, &input]);
+    assert!(processor.stream_buffer::<f32>("spectrum").is_some());
+    assert!(processor.stream_buffer::<f32>("spectrogram").is_none());
 }
 
 #[test]

@@ -238,8 +238,9 @@ export default defineSoundorConfig({
       analyze: { args: { enabled: 'boolean' } },
     },
     resources: {
-      // FFT size, window and speed (their option indices), and whether to
-      // analyze at all; empty until the editor first asks.
+      // FFT size, window and speed (their option indices), then what to
+      // measure: 1 the spectrum, 2 the spectrogram, 3 both, 0 nothing.
+      // Empty until the editor first asks.
       analyzer: { type: 'buffer<uint32>' },
     },
     // What the processor measures, sent to the editor.
@@ -250,6 +251,9 @@ export default defineSoundorConfig({
       // The spectrum before and after the EQ, in dBFS at each of the graph's
       // 320 grid frequencies: the pre spectrum, then the post one.
       spectrum: { type: 'buffer<float32>', maxLength: 640 },
+      // The latest spectrum after the EQ at 4096 equally spaced frequencies
+      // across the graph's range, in dBFS, at the FFT's own resolution.
+      spectrogram: { type: 'buffer<float32>', maxLength: 4096 },
     },
   },
   // Saved with the DAW project. Field names are persistent identities.

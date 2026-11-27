@@ -3,6 +3,8 @@
 use soundor::prelude::*;
 use soundor::types::AnalyzerMode;
 
+use crate::analyzer;
+
 /// Prism's controller. The editor binds to the parameters and state
 /// soundor.config declares; the controller only passes the analyzer's
 /// settings on, as the processor cannot read enum state itself.
@@ -21,13 +23,18 @@ impl NativeMethods for PluginController {
     /// closes.
     fn analyze(ctx: &mut TaskContext<'_, Self>, enabled: bool) {
         let state = &ctx.state;
-        let shown = state.analyzer_mode.get() != AnalyzerMode::Off || state.show_spectrogram.get();
-        let on = enabled && shown;
+        let mut shown = 0;
+        if state.analyzer_mode.get() != AnalyzerMode::Off {
+            shown |= analyzer::SPECTRUM;
+        }
+        if state.show_spectrogram.get() {
+            shown |= analyzer::SPECTROGRAM;
+        }
         let settings = [
             state.analyzer_fft_size.get() as u32,
             state.analyzer_window.get() as u32,
             state.analyzer_speed.get() as u32,
-            u32::from(on),
+            if enabled { shown } else { 0 },
         ];
         ctx.processor
             .resources()
