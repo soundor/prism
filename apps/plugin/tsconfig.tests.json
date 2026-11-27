@@ -14,5 +14,5 @@
     "noEmit": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src", "vitest.config.ts", ".soundor/generated/soundor.d.ts"]
+  "include": ["src", "vitest.config.ts", "vitest.setup.ts", ".soundor/generated/soundor.d.ts"]
 }

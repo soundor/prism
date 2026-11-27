@@ -14,8 +14,8 @@ import { hexToOklab, mixOklab } from './oklab';
 // The spectrogram view: the spectrum's history under the curves, in place of
 // the spectrum. Frequency runs across, as on the graph, and time down.
 
-/** Rows of history: about four seconds at the simulation's 30 frames a second. */
-const HISTORY = 120;
+/** Rows of history: about four seconds at the 60 spectra a second the processor measures. */
+const HISTORY = 240;
 /** Frequency columns drawn across the plot. */
 const COLUMNS = 192;
 

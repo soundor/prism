@@ -2,20 +2,12 @@ import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/component
 import { ring, textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
 import { Path, Svg } from '@soundor/react/svg';
-import {
-  createRef,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react';
+import { createRef, useCallback, useMemo, useRef, useState, type RefObject } from 'react';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
 import type { PointerEvent, UiNode } from 'soundor:ui';
 
-import type { Simulation } from '../analyzer/simulation';
+import type { Analyzer } from '../analyzer/analyzer';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, hasGain, type Band } from '../bands/catalog';
 import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
@@ -61,7 +53,7 @@ const KEYBOARD_HEIGHT = 22;
 // response, and the band markers on top, which are dragged to edit the
 // bands. A double-click on the graph adds a band; a drag on it selects the
 // markers in a rectangle.
-export function Graph({ simulation }: { simulation: Simulation }) {
+export function Graph({ analyzer }: { analyzer: Analyzer }) {
   const theme = useTheme();
   const bands = useBands();
   const selection = useSelection();
@@ -76,7 +68,6 @@ export function Graph({ simulation }: { simulation: Simulation }) {
   const [frame, setFrame] = useState<Frame | null>(null);
 
   const responses = useResponses(bands);
-  useEffect(() => simulation.setResponse(responses.combined), [simulation, responses.combined]);
   const soloed = bands.find((band) => band.solo);
   const soloing = soloed !== undefined;
   const limit = rangeDecibels[range];
@@ -120,7 +111,7 @@ export function Graph({ simulation }: { simulation: Simulation }) {
     >
       {spectrogram && frame && (
         <SpectrogramLayer
-          source={simulation.spectrogram}
+          source={analyzer.spectrogram}
           frame={{ ...frame, top: frame.top + PLOT_OFFSET }}
           floor={floorDecibels[floor]}
         />
@@ -178,23 +169,23 @@ export function Graph({ simulation }: { simulation: Simulation }) {
           <Plot.Grid yAxis={phase ? 'phase' : undefined} />
           <PlotFrame onChange={setFrame} />
           {showPre && (
-            <Plot.Line source={simulation.pre} yAxis="analyzer" {...PRE_TRACE} hideInReadout />
+            <Plot.Line source={analyzer.pre} yAxis="analyzer" {...PRE_TRACE} hideInReadout />
           )}
           {showPost && (
             <>
               <Plot.Band
-                source={simulation.postFill}
+                source={analyzer.postFill}
                 yAxis="analyzer"
                 color={POST_TRACE.color}
                 opacity={POST_BAND_OPACITY}
                 hideInReadout
               />
-              <Plot.Line source={simulation.post} yAxis="analyzer" {...POST_TRACE} hideInReadout />
+              <Plot.Line source={analyzer.post} yAxis="analyzer" {...POST_TRACE} hideInReadout />
             </>
           )}
           {showPost && peakHold && (
             <Plot.Line
-              source={simulation.peak}
+              source={analyzer.peak}
               yAxis="analyzer"
               color={POST_TRACE.color}
               opacity={0.4}

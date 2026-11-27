@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { resample } from '../../analyzer/simulation';
+import { resample } from '../../analyzer/analyzer';
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../../bands/catalog';
 import { formatDegrees, phasePoints, wrapDegrees } from '../phase';
 import { gridFrequencies, GRID_POINTS } from '../response';
