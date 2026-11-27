@@ -13,10 +13,10 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Soundor Prism: a four-band equalizer' },
+      { title: 'Soundor Prism: a 24-band parametric equalizer' },
       {
         name: 'description',
-        content: 'Soundor Prism is a four-band equalizer for VST3 hosts and the browser.',
+        content: 'Soundor Prism is a 24-band parametric equalizer for VST3 hosts and the browser.',
       },
       { property: 'og:title', content: 'Soundor Prism' },
       {

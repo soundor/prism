@@ -1,21 +1,69 @@
 ---
 title: Controls
-description: What each EQ band changes and how to compare with the original signal.
+description: Bands, the graph, the inspector, presets, A/B and keyboard shortcuts.
 ---
 
-## Band gains
+## Bands
 
-Each knob cuts or boosts by up to 12 dB. Frequency and filter shape are fixed.
+Each band has a filter type, a frequency (10 Hz to 30 kHz), and the settings its type uses:
 
-| Band     | Frequency | Filter     |
-| -------- | --------: | ---------- |
-| Low      |    100 Hz | Low shelf  |
-| Low mid  |    400 Hz | Bell       |
-| High mid |     2 kHz | Bell       |
-| High     |     8 kHz | High shelf |
+| Type                  | Gain         | Q           | Slope          |
+| --------------------- | ------------ | ----------- | -------------- |
+| Bell                  | up to ±30 dB | 0.025 to 40 | no             |
+| Low shelf, high shelf | up to ±30 dB | 0.025 to 40 | no             |
+| Low cut, high cut     | no           | 0.025 to 40 | 6 to 48 dB/oct |
+| Notch, band pass      | no           | 0.025 to 40 | no             |
 
-Drag a knob or use the arrow keys. Press Home on a focused knob to reset it to 0 dB. The colored dots show the gain setting of each band, not the combined frequency response.
+A 6 dB/oct cut has no Q. Each band also processes **Stereo**, **Left**, **Right**, **Mid** or **Side**; a band that is not stereo shows L, R, M or S beside its marker.
 
-## Original and Prism
+A band can be **bypassed** (it stays in place, with a hollow marker and a dashed curve) or **soloed** (you hear that band alone, and the others dim). **Bypass** at the top right bypasses the whole EQ and takes precedence over solo.
 
-Select **Original** to bypass the EQ without losing your settings. Select **Prism** to hear the EQ again. Boosting bands adds level; leave some headroom when comparing.
+## The graph
+
+Each band is a numbered marker on the graph; cuts have a square marker. The white line is the combined response, and the thin coloured lines are the single bands.
+
+| On the graph               | What it does                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| Double-click an empty spot | Add a band there: a low cut below 30 Hz, a high cut above 16 kHz, a bell elsewhere |
+| Drag a marker              | Frequency across, gain up and down; hold Shift for fine steps                      |
+| Scroll over a marker       | Q; hold Shift for fine steps                                                       |
+| Double-click a marker      | Reset its gain to 0 dB                                                             |
+| Right-click a marker       | Bypass, solo, reset gain, filter type, duplicate, delete                           |
+| Hold Alt over a marker     | Show all its settings                                                              |
+| Click a marker             | Select it; Shift-click adds to the selection, Ctrl-click (Cmd-click) toggles       |
+| Drag on an empty spot      | Select the markers inside the rectangle; Shift adds, Ctrl (Cmd) toggles            |
+| Drag a selected marker     | Move the whole selection together                                                  |
+
+**Range** in the footer sets the gain axis from ±3 to ±30 dB. Bands outside it are hidden until you widen it again.
+
+## The inspector
+
+The strip above the inspector lists every band; click a chip to add it to the selection or take it out, or press **Add** for a bell at 1 kHz.
+
+With one band selected, the inspector shows its type, frequency, gain, Q, slope and channel, and buttons to turn it on or off, solo it, or delete it. Controls the type doesn't use are greyed out with the reason.
+
+With several bands selected, it shows the values they share and **Mixed** for the others. Turning frequency, gain or Q then moves every band by the same amount (octaves, decibels or a Q ratio), so their spacing stays the same.
+
+## Presets, undo and A/B
+
+The preset menu at the top holds the factory presets: Init, Vocal Presence, Kick Tighten, Gentle Master and Rumble Cleanup. The arrows beside it step through them. A dot after the name means you have changed the preset. Loading one keeps your view settings.
+
+Undo and redo cover every edit, and a drag is one step.
+
+**A** and **B** are two separate setups to compare. B starts empty the first time you use it. The copy button (**A → B** or **B → A**) copies the setup on screen to the other one. Both are saved with your project.
+
+## Input and output
+
+The **IN** and **OUT** fields beside the graph trim the level by up to ±24 dB. The output meter's clip indicators stay lit until you click them.
+
+## Keyboard
+
+| Key                        | What it does                                     |
+| -------------------------- | ------------------------------------------------ |
+| Tab                        | Move between controls, the graph and each marker |
+| Arrow keys on a marker     | Frequency left and right, gain up and down       |
+| Delete or Backspace        | Delete the focused marker's band                 |
+| Shift+F10 or the Menu key  | Open the focused marker's actions                |
+| Escape                     | Clear the selection                              |
+| Ctrl+Z (Cmd+Z)             | Undo                                             |
+| Ctrl+Shift+Z (Cmd+Shift+Z) | Redo                                             |

@@ -1,6 +1,6 @@
 # Branding
 
-Soundor Prism is the four-band equalizer and companion website in the official
+Soundor Prism is the parametric equalizer and companion website in the official
 Soundor ecosystem. The [Soundor Brand Guidelines](https://soundor.dev/brand)
 are the authoritative reference for the Soundor name and logos.
 

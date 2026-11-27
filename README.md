@@ -2,16 +2,17 @@
 
 # Soundor Prism
 
-Prism is a four-band equalizer built with [Soundor](https://soundor.dev). The same Rust processor runs in a VST3 host and in the browser.
+Prism is a parametric equalizer built with [Soundor](https://soundor.dev), for VST3 hosts and the browser.
 
-| Band     | Filter | Frequency |
-| -------- | ------ | --------: |
-| Low      | Shelf  |    100 Hz |
-| Low mid  | Bell   |    400 Hz |
-| High mid | Bell   |     2 kHz |
-| High     | Shelf  |     8 kHz |
+- Up to 24 bands: bell, low and high shelf, low and high cut (6 to 48 dB/oct), notch and band pass, from 10 Hz to 30 kHz, each on stereo, left, right, mid or side.
+- Add, drag and shape bands on the response graph, select several with a rectangle and edit them together, or use the inspector below the graph. Per-band bypass and solo, global bypass, input and output gain.
+- Factory presets, undo and redo, and A/B comparison saved with the project.
+- A pre and post spectrum analyzer with freeze and settings, a spectrogram, a pitch keyboard and a phase view.
+- One 1200 × 720 layout, scaled as a whole from 75 % to 200 %.
 
-Each band cuts or boosts up to 12 dB. Drag a knob or use the arrow keys; Home resets it to 0 dB. Switch to **Original** to hear the unprocessed signal and back to **Prism** to hear the EQ. The display shows each band's gain setting, not the combined response.
+**Status:** the editor is complete, but the Rust processor still passes audio through unchanged, and the analyzer and meters show a simulated signal. The curves are display-only filter math for now. Sessions saved with the earlier four-band version do not load their settings.
+
+See the [docs](apps/website/content/docs) for the controls and keyboard shortcuts.
 
 ## Develop
 
@@ -21,7 +22,7 @@ Use Node 24, Corepack, and Rust via `rustup` with `rustfmt` and the `wasm32-unkn
 corepack enable
 pnpm install --frozen-lockfile
 pnpm check          # format, lint, types, UI and DSP tests, and static site build
-pnpm test:e2e       # build and test the browser plugin in Chromium
+pnpm test:e2e       # build the browser plugin and test each editor state in Chromium
 pnpm dev            # Soundor browser runtime in development mode
 pnpm website        # run the Fumadocs website at localhost:3000
 pnpm build:vst3     # apps/plugin/.soundor/dist/vst3/Soundor Prism.vst3
@@ -32,7 +33,7 @@ Before running browser tests for the first time, install Chromium with
 
 For local VST3 use, copy the resulting bundle into a location your host scans for VST3 plugins, then rescan. For the browser demo, press Play for the included synth loop or select Audio file to play a local file.
 
-- `apps/plugin`: Soundor configuration, React editor, Rust DSP, and demo input.
+- `apps/plugin`: Soundor configuration and factory presets, the React editor (feature folders under `src`: `app`, `analyzer`, `bands`, `graph`, `inspector`, `meters`, `presets`), the Rust processor, and demo input.
 - `apps/website`: Fumadocs on TanStack Start, with a landing page, searchable MDX docs in `content/docs`, and the browser demo. `pnpm build` prerenders the site to `apps/website/dist/client`.
 - `assets/brand`: supplied artwork and usage notes. Use either social preview image as the repository's GitHub social card.
 
