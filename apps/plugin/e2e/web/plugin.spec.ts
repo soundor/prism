@@ -253,6 +253,32 @@ test('analyzer controls can hide the axis, freeze the trace and change analyzer 
   await expect(wide).toBeChecked();
 });
 
+test('the display switches to phase, and the spectrogram and pitch keyboard toggle', async ({
+  page,
+}) => {
+  const view = page.getByRole('toolbar', { name: 'View', exact: true });
+  const display = view.getByRole('radiogroup', { name: 'Display' });
+  await display.getByRole('radio', { name: 'Phase' }).click();
+  await expect(page.getByText('PHASE RESPONSE')).toBeVisible();
+  await expect(page.getByText('DEG', { exact: true })).toBeVisible();
+  await display.getByRole('radio', { name: 'Magnitude' }).click();
+  await expect(page.getByText('PHASE RESPONSE')).toBeHidden();
+
+  const spectrogram = view.getByRole('button', { name: 'Spectrogram' });
+  await spectrogram.click();
+  await expect(spectrogram).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('img', { name: 'Spectrogram' })).toBeVisible();
+  await expect(page.getByText('Pre EQ')).toBeHidden();
+  await spectrogram.click();
+  await expect(page.getByRole('img', { name: 'Spectrogram' })).toBeHidden();
+
+  const keyboard = view.getByRole('button', { name: 'Pitch keyboard' });
+  await keyboard.click();
+  await expect(page.getByRole('img', { name: 'Musical pitch keyboard' })).toBeVisible();
+  await keyboard.click();
+  await expect(page.getByRole('img', { name: 'Musical pitch keyboard' })).toBeHidden();
+});
+
 test('simulated output clips and each clip indicator can be cleared', async ({ page }) => {
   const channel = 'Output level, channel 1';
   await expect(page.getByRole('progressbar', { name: channel })).toBeVisible();

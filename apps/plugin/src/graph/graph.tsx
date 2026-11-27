@@ -33,9 +33,11 @@ import {
 import { bandColor } from './band-colors';
 import { BandMarker } from './band-marker';
 import { bandAt, moveGroup } from './editing';
-import { BandTooltip, EmptyHint, GraphStatus, Readout } from './overlays';
+import { BandTooltip, EmptyHint, GraphStatus, PhaseCaption, Readout } from './overlays';
 import { altStore, pointerStore, trackModifiers, useStore } from './pointer';
+import { formatDegrees, phasePoints, phaseTicks } from './phase';
 import { bandResponse, combine, GRID_POINTS, toPoints, type Response } from './response';
+import { PlotFrame, SpectrogramLayer, type Frame } from './spectrogram';
 
 /**
  * The plot starts this far below the graph's top edge, leaving room for the
@@ -51,6 +53,9 @@ const PEAK_DASH = [1, 3];
 const POST_FILL = 0.18;
 // Plot.Band renders its fill at a quarter of the supplied series opacity.
 const POST_BAND_OPACITY = POST_FILL / 0.25;
+/** The combined magnitude, kept as a ghost behind the phase curve. */
+const MAGNITUDE_GHOST = { opacity: 0.22, strokeWidth: 1, dash: [2, 3] };
+const KEYBOARD_HEIGHT = 22;
 
 // The equalizer graph: grid and axes, each band's response, the combined
 // response, and the band markers on top, which are dragged to edit the
@@ -66,6 +71,9 @@ export function Graph({ simulation }: { simulation: Simulation }) {
   const spectrogram = useStateValue(state.showSpectrogram);
   const floor = useStateValue(state.analyzerFloor);
   const peakHold = useStateValue(state.analyzerPeakHold);
+  const phase = useStateValue(state.displayMode) === 'phase';
+  const keyboard = useStateValue(state.showKeyboard);
+  const [frame, setFrame] = useState<Frame | null>(null);
 
   const responses = useResponses(bands);
   useEffect(() => simulation.setResponse(responses.combined), [simulation, responses.combined]);
@@ -101,6 +109,13 @@ export function Graph({ simulation }: { simulation: Simulation }) {
         overflow: 'hidden',
       }}
     >
+      {spectrogram && frame && (
+        <SpectrogramLayer
+          source={simulation.spectrogram}
+          frame={{ ...frame, top: frame.top + PLOT_OFFSET }}
+          floor={floorDecibels[floor]}
+        />
+      )}
       <View
         style={{ position: 'absolute', left: 0, top: PLOT_OFFSET }}
         onPointerMoveCapture={trackPointer}
@@ -118,7 +133,8 @@ export function Graph({ simulation }: { simulation: Simulation }) {
           autoSafeZone={false}
           axisLabelGap={14}
           accessibilityLabel="Equalizer response and bands"
-          styles={{ root: { backgroundColor: theme.color.display, borderRadius: 0 } }}
+          // Clear, so that the spectrogram shows through from under it.
+          styles={{ root: { backgroundColor: 'transparent', borderRadius: 0 } }}
           selection={selectionProps}
           onBackgroundDoubleClick={({ data: [hz, db] }) => addBand(bands, bandAt(hz, db))}
         >
@@ -129,7 +145,19 @@ export function Graph({ simulation }: { simulation: Simulation }) {
             minorTicks
             format={formatFrequencyTick}
           />
-          <Plot.YAxis domain={[-limit, limit]} ticks={gainTicks(range)} format={formatSigned} />
+          <Plot.YAxis
+            domain={[-limit, limit]}
+            ticks={gainTicks(range)}
+            format={formatSigned}
+            hidden={phase}
+          />
+          <Plot.YAxis
+            id="phase"
+            domain={[-180, 180]}
+            ticks={phaseTicks}
+            format={formatDegrees}
+            hidden={!phase}
+          />
           <Plot.YAxis
             id="analyzer"
             position="right"
@@ -138,7 +166,8 @@ export function Graph({ simulation }: { simulation: Simulation }) {
             format={formatSigned}
             hidden={!analyzerAxis}
           />
-          <Plot.Grid />
+          <Plot.Grid yAxis={phase ? 'phase' : undefined} />
+          <PlotFrame onChange={setFrame} />
           {showPre && (
             <Plot.Line source={simulation.pre} yAxis="analyzer" {...PRE_TRACE} hideInReadout />
           )}
@@ -164,22 +193,41 @@ export function Graph({ simulation }: { simulation: Simulation }) {
               hideInReadout
             />
           )}
-          <Plot.HorizontalLine value={0} color={theme.color.displayAxis} />
-
-          {bands.map((band) => (
-            <Plot.Line
-              key={band.slot}
-              points={responses.points.get(band.slot)!}
-              color={bandColor(theme, band.slot)}
-              opacity={bandCurveOpacity(band, soloing) * fade}
-              strokeWidth={1}
-              dash={band.enabled ? undefined : [3, 3]}
-              extend
-              hideInReadout
-            />
-          ))}
-
-          {bands.length > 0 && (
+          {!phase && <Plot.HorizontalLine value={0} color={theme.color.displayAxis} />}
+          {!phase &&
+            bands.map((band) => (
+              <Plot.Line
+                key={band.slot}
+                points={responses.points.get(band.slot)!}
+                color={bandColor(theme, band.slot)}
+                opacity={bandCurveOpacity(band, soloing) * fade}
+                strokeWidth={1}
+                dash={band.enabled ? undefined : [3, 3]}
+                extend
+                hideInReadout
+              />
+            ))}
+          {bands.length > 0 && phase && (
+            <>
+              <Plot.Line
+                points={responses.combined}
+                color={theme.color.textInverse}
+                {...MAGNITUDE_GHOST}
+                opacity={MAGNITUDE_GHOST.opacity * fade}
+                extend
+                hideInReadout
+              />
+              <Plot.Line
+                points={responses.phase}
+                yAxis="phase"
+                color={theme.color.displayWarning}
+                opacity={fade}
+                strokeWidth={1.75}
+                label="Phase"
+              />
+            </>
+          )}
+          {bands.length > 0 && !phase && (
             <>
               <Plot.Band
                 lower={responses.zero}
@@ -198,7 +246,6 @@ export function Graph({ simulation }: { simulation: Simulation }) {
               />
             </>
           )}
-
           {dragging !== null && shownBand && (
             <Plot.VerticalLine
               value={shownBand.frequency}
@@ -206,7 +253,13 @@ export function Graph({ simulation }: { simulation: Simulation }) {
               dash={[2, 4]}
             />
           )}
-
+          {keyboard && (
+            <Plot.FrequencyKeyboard
+              height={KEYBOARD_HEIGHT}
+              highlightedNotes={selection.map((band) => nearestNote(band.frequency))}
+              styles={{ root: { opacity: 0.8 } }}
+            />
+          )}
           {visibleBands.map((band) => {
             const selected = selection.some((s) => s.slot === band.slot);
             return (
@@ -234,9 +287,9 @@ export function Graph({ simulation }: { simulation: Simulation }) {
               />
             );
           })}
-
           {bands.length === 0 && <EmptyHint />}
-          <Readout hidden={!alt || shown !== null} />
+          {phase && <PhaseCaption />}
+          <Readout hidden={!alt || shown !== null} phase={phase} />
         </Plot>
       </View>
       {shownBand && (
@@ -252,7 +305,7 @@ export function Graph({ simulation }: { simulation: Simulation }) {
         <GraphStatus label={`Solo · Band ${soloed.slot}`} color={bandColor(theme, soloed.slot)} />
       ) : null}
       <AnalyzerLegend pre={showPre} post={showPost} peak={showPost && peakHold} />
-      <UnitLabels analyzer={analyzerAxis} />
+      <UnitLabels analyzer={analyzerAxis} phase={phase} />
     </View>
   );
 }
@@ -374,8 +427,11 @@ function bandCurveOpacity(band: Band, soloing: boolean) {
   return 0.5;
 }
 
-/** "dB" at the top left, "dBFS" at the top right, "Hz" at the bottom right. */
-function UnitLabels({ analyzer }: { analyzer: boolean }) {
+/** The equal-tempered note nearest a frequency, where A4 is 69. */
+const nearestNote = (hz: number) => Math.round(69 + 12 * Math.log2(hz / 440));
+
+/** "dB" (or "DEG") at the top left, "dBFS" at the top right, "Hz" at the bottom right. */
+function UnitLabels({ analyzer, phase }: { analyzer: boolean; phase: boolean }) {
   const theme = useTheme();
   const style = textStyle(theme, 'technical', theme.color.displayMuted);
   return (
@@ -389,7 +445,7 @@ function UnitLabels({ analyzer }: { analyzer: boolean }) {
         pointerEvents: 'none',
       }}
     >
-      <Text style={[style, { position: 'absolute', left: 8, top: 8 }]}>dB</Text>
+      <Text style={[style, { position: 'absolute', left: 8, top: 8 }]}>{phase ? 'DEG' : 'dB'}</Text>
       {analyzer && <Text style={[style, { position: 'absolute', right: 6, top: 8 }]}>dBFS</Text>}
       <Text style={[style, { position: 'absolute', right: 6, bottom: 6 }]}>Hz</Text>
     </View>
@@ -401,6 +457,8 @@ interface Curves {
   points: Map<number, [number, number][]>;
   combined: [number, number][];
   zero: [number, number][];
+  /** The combined phase, in degrees wrapped to ±180°. */
+  phase: [number, number][];
 }
 
 const zeroPoints = toPoints(new Float64Array(GRID_POINTS));
@@ -421,6 +479,12 @@ function useResponses(bands: readonly Band[]): Curves {
       points.set(band.slot, toPoints(entry.response.decibels));
       if (band.enabled) active.push(entry.response);
     }
-    return { points, combined: toPoints(combine(active).decibels), zero: zeroPoints };
+    const combined = combine(active);
+    return {
+      points,
+      combined: toPoints(combined.decibels),
+      zero: zeroPoints,
+      phase: phasePoints(combined.phase),
+    };
   }, [bands, cache]);
 }
