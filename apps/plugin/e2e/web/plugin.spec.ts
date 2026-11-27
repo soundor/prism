@@ -280,9 +280,8 @@ test('the display switches to phase, and the spectrogram and pitch keyboard togg
 });
 
 test('simulated output clips and each clip indicator can be cleared', async ({ page }) => {
-  const channel = 'Output level, channel 1';
-  await expect(page.getByRole('progressbar', { name: channel })).toBeVisible();
-  const reset = page.getByRole('button', { name: `Reset ${channel} clip indicator` });
+  await expect(page.getByRole('progressbar', { name: 'Output level, left' })).toBeVisible();
+  const reset = page.getByRole('button', { name: 'Output clip, left' });
   const gain = page.getByRole('slider', { name: 'Output gain', exact: true });
   await gain.dblclick();
   const entry = page.locator('input:focus');
