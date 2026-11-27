@@ -163,7 +163,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@soundor/components@0.5.0': b730d2273463c8921c63f657e5e908b28f4bed069fabe94a0b61b1c9c761bc0a
+  '@soundor/components@0.5.0': 63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e
 
 importers:
 
@@ -183,7 +183,7 @@ importers:
     dependencies:
       '@soundor/components':
         specifier: 0.5.0
-        version: 0.5.0(patch_hash=b730d2273463c8921c63f657e5e908b28f4bed069fabe94a0b61b1c9c761bc0a)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
+        version: 0.5.0(patch_hash=63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
       '@soundor/icons':
         specifier: 0.3.0
         version: 0.3.0(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)
@@ -4191,7 +4191,7 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.1.0': {}
 
-  '@soundor/components@0.5.0(patch_hash=b730d2273463c8921c63f657e5e908b28f4bed069fabe94a0b61b1c9c761bc0a)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
+  '@soundor/components@0.5.0(patch_hash=63a17b7c844f60add46313b30f685d3223287eb661f0fd1c7e7ce8e73fdb765e)(@soundor/react@0.21.0(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@soundor/react': 0.21.0(react@19.3.1)
       react: 19.3.1

@@ -70,6 +70,56 @@ test('the synth loop keeps playing through bypass', async ({ page }) => {
 const marker = (page: Page, name: string) =>
   page.getByLabel(name, { exact: true }).and(page.locator(':not([role="option"])'));
 
+test('bands outside a narrow gain range are hidden and do not affect vertical drags', async ({
+  page,
+}) => {
+  await header(page).getByRole('button', { name: 'Next preset' }).click();
+  const cut = marker(page, 'Band 2, Bell');
+  const boost = marker(page, 'Band 3, Bell');
+  const shelf = marker(page, 'Band 5, High shelf');
+  await expect(cut).toHaveAttribute('aria-valuetext', /−3\.2 dB/);
+  await expect(shelf).toHaveAttribute('aria-valuetext', /\+3\.4 dB/);
+  await boost.click();
+  await cut.click({ modifiers: ['Shift'] });
+  await shelf.click({ modifiers: ['Shift'] });
+  await expect(page.getByText('3 selected', { exact: true })).toBeVisible();
+
+  await page.getByRole('radio', { name: '±3', exact: true }).click();
+  await expect(cut).toBeHidden();
+  await expect(shelf).toBeHidden();
+  await expect(boost).toHaveAttribute('aria-valuetext', /\+2\.6 dB/);
+
+  const box = (await boost.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x, y + 100, { steps: 8 });
+  await page.mouse.up();
+  await expect(boost).toHaveAttribute('aria-valuetext', /\+1\.[0-9] dB/);
+
+  await page.getByRole('radio', { name: '±12', exact: true }).click();
+  await expect(cut).toHaveAttribute('aria-valuetext', /−3\.2 dB/);
+  await expect(shelf).toHaveAttribute('aria-valuetext', /\+3\.4 dB/);
+});
+
+test('graph coordinates stay fixed when the first marker appears', async ({ page }) => {
+  const graph = page.getByLabel('Equalizer response and bands', { exact: true });
+  const box = (await graph.boundingBox())!;
+  const x = box.x + box.width * 0.72;
+  const y = box.y + box.height * 0.3;
+  await page.mouse.dblclick(x, y);
+  const first = marker(page, 'Band 1, Bell');
+  await expect(first).toBeVisible();
+  const value = (await first.getAttribute('aria-valuetext'))!;
+
+  await header(page).getByRole('button', { name: 'Undo', exact: true }).click();
+  await page.getByRole('button', { name: 'Add band' }).click();
+  await expect(first).toBeVisible();
+  await page.mouse.dblclick(x, y);
+  await expect(marker(page, 'Band 2, Bell')).toHaveAttribute('aria-valuetext', value);
+});
+
 test('marker actions open at a secondary click and the filter submenu works from the keyboard', async ({
   page,
 }) => {

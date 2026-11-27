@@ -17,7 +17,7 @@ import type { PointerEvent, UiNode } from 'soundor:ui';
 
 import type { Simulation } from '../analyzer/simulation';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
-import { FREQUENCY_MAX, FREQUENCY_MIN, type Band } from '../bands/catalog';
+import { FREQUENCY_MAX, FREQUENCY_MIN, hasGain, type Band } from '../bands/catalog';
 import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
 import { setSelection, useSelection } from '../bands/selection';
 import { useBands } from '../bands/use-bands';
@@ -80,13 +80,16 @@ export function Graph({ simulation }: { simulation: Simulation }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const [dragging, setDragging] = useState<number | null>(null);
   const markerRefs = useMarkerRefs();
-  const selectionProps = usePlotSelection(bands, limit);
+  // Only visible handles take part in graph drags, including group moves.
+  // The response and inspector still use the complete set of bands.
+  const visibleBands = bands.filter((band) => !hasGain(band.type) || Math.abs(band.gain) <= limit);
+  const selectionProps = usePlotSelection(visibleBands, limit);
   // A drag shows its band's values. Otherwise both readings, a marker's
   // tooltip and the cursor readout, show only while Alt is held, so that
   // moving over the graph does not cover it.
   const alt = useStore(altStore);
   const shown = dragging ?? (alt ? hovered : null);
-  const shownBand = bands.find((band) => band.slot === shown);
+  const shownBand = visibleBands.find((band) => band.slot === shown);
 
   return (
     <View
@@ -110,6 +113,10 @@ export function Graph({ simulation }: { simulation: Simulation }) {
         <Plot
           width={GRAPH_WIDTH}
           height={GRAPH_HEIGHT - PLOT_OFFSET}
+          // The axis gutters already leave room for handles. Map the data
+          // all the way to the frame, with or without a visible handle.
+          autoSafeZone={false}
+          axisLabelGap={14}
           accessibilityLabel="Equalizer response and bands"
           styles={{ root: { backgroundColor: theme.color.display, borderRadius: 0 } }}
           selection={selectionProps}
@@ -200,7 +207,7 @@ export function Graph({ simulation }: { simulation: Simulation }) {
             />
           )}
 
-          {bands.map((band) => {
+          {visibleBands.map((band) => {
             const selected = selection.some((s) => s.slot === band.slot);
             return (
               <BandMarker
@@ -325,10 +332,10 @@ function useMarkerRefs() {
 /**
  * The Plot's side of the selection: a marker click selects, Shift adds and
  * Ctrl or Cmd toggles; a drag on the background selects a rectangle; a drag
- * of a selected marker moves all the selected bands, as one undo step.
+ * of a selected marker moves the visible selected bands, as one undo step.
  */
 function usePlotSelection(bands: readonly Band[], gainLimit: number): PlotSelection {
-  const selection = useSelection();
+  const selection = useSelection().filter((band) => bands.some(({ slot }) => slot === band.slot));
   const group = useRef<{ bands: readonly Band[]; edit: BandsMove } | null>(null);
   const onGroupDrag = (event: PlotGroupDrag) => {
     if (event.phase === 'start') {
