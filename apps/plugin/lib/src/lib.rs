@@ -3,6 +3,7 @@
 mod controller;
 pub mod engine;
 pub mod filter;
+mod meter;
 mod parameters;
 mod processor;
 

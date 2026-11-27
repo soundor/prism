@@ -53,7 +53,7 @@ export function App() {
       <Header />
       <View style={{ flexDirection: 'row', gap: GAP, paddingTop: GAP, paddingHorizontal: EDGE }}>
         <Graph simulation={simulation} />
-        <MeterColumn levels={simulation.meters} />
+        <MeterColumn />
       </View>
       <Inspector />
       <Footer onFreeze={simulation.setFrozen} />

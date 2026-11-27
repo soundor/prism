@@ -68,7 +68,6 @@ export function createSimulation() {
   const postBand = { lower: initial(), upper: postPoints };
   const postFill = channel<PlotBandSamples>(postBand);
   const peak = channel<PlotSamples>({ points: peakPoints });
-  const meters = channel<[number, number]>([-60, -60]);
   // The post spectrum (the pre one while bypassed), resampled to linear bins.
   const frame: SpectrumFrame = {
     values: new Float32Array(SPECTROGRAM_BINS).fill(-120),
@@ -81,15 +80,6 @@ export function createSimulation() {
 
   function step() {
     t += TICK_MS / 1000;
-    const bypassed = parameters.bypass.get();
-    const input = bypassed ? 0 : parameters.inputGain.get();
-    const output = bypassed ? 0 : parameters.outputGain.get();
-    const base = -12 + input + output + 3 * Math.sin(t * 2.3) + Math.sin(t * 7);
-    const clampMeter = (db: number) => Math.min(6, Math.max(-90, db));
-    meters.publish([
-      clampMeter(base + 1.2 * Math.sin(t * 9)),
-      clampMeter(base + 1.2 * Math.cos(t * 8)),
-    ]);
     if (frozen || (state.analyzerMode.get() === 'off' && !state.showSpectrogram.get())) return;
 
     const width = smoothingBins[state.analyzerSmoothing.get()];
@@ -97,6 +87,9 @@ export function createSimulation() {
     const resolution = 48_000 / fftSizes[state.analyzerFftSize.get()];
     const ripple = windowRipple[state.analyzerWindow.get()];
     const tilt = state.analyzerTilt.get();
+    const bypassed = parameters.bypass.get();
+    const input = bypassed ? 0 : parameters.inputGain.get();
+    const output = bypassed ? 0 : parameters.outputGain.get();
     const hold = state.analyzerPeakHold.get();
     for (const [i, hz] of gridFrequencies.entries()) {
       raw[i] = program(hz, t, resolution, ripple) + tilt * Math.log2(hz / 1000) + input;
@@ -139,7 +132,6 @@ export function createSimulation() {
     post: post.source,
     postFill: postFill.source,
     peak: peak.source,
-    meters: meters.source,
     spectrogram: spectrogram.source,
     setFrozen(value: boolean) {
       frozen = value;
