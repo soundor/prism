@@ -20,12 +20,14 @@ import { pointerStore, shiftStore, useStore } from './pointer';
 // hint on an empty graph. None of them takes the pointer.
 
 const SEPARATOR = '   ';
+const PHASE_CAPTION_HEIGHT = 26;
 
 /**
- * Where the pointer is, while Alt is held: frequency, the nearest note and gain, in a chip at
- * the plot's top left, and a line down the plot at the pointer.
+ * Where the pointer is, while Alt is held: frequency, the nearest note and,
+ * on the magnitude view, gain, in a chip at the plot's top left, and a line
+ * down the plot at the pointer.
  */
-export function Readout({ hidden }: { hidden: boolean }) {
+export function Readout({ hidden, phase = false }: { hidden: boolean; phase?: boolean }) {
   const theme = useTheme();
   const pointer = useStore(pointerStore);
   const { inner, rect, x, y } = usePlotCoordinates();
@@ -34,7 +36,10 @@ export function Readout({ hidden }: { hidden: boolean }) {
   if (px < inner.left || px > inner.left + inner.width || py < rect.top) return null;
   if (py > rect.top + rect.height) return null;
   const hz = x.invert(px);
-  const text = [formatFrequency(hz), formatNote(hz), formatGain(y.invert(py))].join(SEPARATOR);
+  // The vertical position reads as gain only on the magnitude view.
+  const parts = [formatFrequency(hz), formatNote(hz)];
+  if (!phase) parts.push(formatGain(y.invert(py)));
+  const text = parts.join(SEPARATOR);
   return (
     <>
       <View
@@ -53,7 +58,8 @@ export function Readout({ hidden }: { hidden: boolean }) {
         style={{
           position: 'absolute',
           left: inner.left + 8,
-          top: rect.top + 8,
+          // Below the phase view's caption.
+          top: rect.top + (phase ? PHASE_CAPTION_HEIGHT + 16 : 8),
           height: 20,
           paddingHorizontal: 8,
           justifyContent: 'center',
@@ -150,6 +156,33 @@ export function GraphStatus({ label, color }: { label: string; color: string }) 
           {label.toUpperCase()}
         </Text>
       </View>
+    </View>
+  );
+}
+
+/** What the phase view shows, at the plot's top left. */
+export function PhaseCaption() {
+  const theme = useTheme();
+  const { inner, rect } = usePlotCoordinates();
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: inner.left + 8,
+        top: rect.top + 8,
+        height: PHASE_CAPTION_HEIGHT,
+        gap: 3,
+        pointerEvents: 'none',
+      }}
+    >
+      <Text
+        style={[textStyle(theme, 'technical', theme.color.displayText), { letterSpacing: 1.8 }]}
+      >
+        PHASE RESPONSE
+      </Text>
+      <Text style={textStyle(theme, 'caption', theme.color.displayMuted)}>
+        Of the current minimum-phase filters · display only
+      </Text>
     </View>
   );
 }

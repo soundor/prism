@@ -1,7 +1,8 @@
-import type { PlotBandSamples, PlotSamples, PlotSource } from '@soundor/components';
+import type { PlotBandSamples, PlotSamples, PlotSource, SpectrumFrame } from '@soundor/components';
 import { parameters } from 'soundor:parameters';
 import { state } from 'soundor:state';
 
+import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 import { gridFrequencies, toPoints } from '../graph/response';
 
 const TICK_MS = 33;
@@ -9,6 +10,11 @@ const smoothingBins = { off: 0, oct12: 1, oct6: 2, oct3: 5 };
 const responseRates = { slow: 0.12, medium: 0.3, fast: 0.6 };
 const fftSizes = { fft2048: 2048, fft4096: 4096, fft8192: 8192, fft16384: 16384 };
 const windowRipple = { hann: 1.8, blackmanHarris: 1, hamming: 2.4, flatTop: 0.6 };
+/**
+ * Bins in a spectrogram frame, equally spaced across the graph's range as an
+ * FFT's are: about 7 Hz apart, so that the lowest octaves keep some detail.
+ */
+export const SPECTROGRAM_BINS = 4096;
 
 function channel<T>(initial: T) {
   let current = initial;
@@ -63,6 +69,12 @@ export function createSimulation() {
   const postFill = channel<PlotBandSamples>(postBand);
   const peak = channel<PlotSamples>({ points: peakPoints });
   const meters = channel<[number, number]>([-60, -60]);
+  // The post spectrum (the pre one while bypassed), resampled to linear bins.
+  const frame: SpectrumFrame = {
+    values: new Float32Array(SPECTROGRAM_BINS).fill(-120),
+    frequencyRange: [FREQUENCY_MIN, FREQUENCY_MAX],
+  };
+  const spectrogram = channel<SpectrumFrame>(frame);
   let frozen = false;
   let response: readonly (readonly [number, number])[] = [];
   let t = 0;
@@ -116,6 +128,10 @@ export function createSimulation() {
     post.publish({ points: postPoints });
     postFill.publish(postBand);
     peak.publish({ points: peakPoints });
+    if (state.showSpectrogram.get()) {
+      resample(postPoints, frame.values as Float32Array);
+      spectrogram.publish(frame);
+    }
   }
 
   return {
@@ -124,6 +140,7 @@ export function createSimulation() {
     postFill: postFill.source,
     peak: peak.source,
     meters: meters.source,
+    spectrogram: spectrogram.source,
     setFrozen(value: boolean) {
       frozen = value;
     },
@@ -136,6 +153,20 @@ export function createSimulation() {
       return () => clearInterval(timer);
     },
   };
+}
+
+/** Log-spaced [Hz, dB] points, linearly interpolated onto equally spaced bins. */
+export function resample(points: readonly (readonly [number, number])[], into: Float32Array) {
+  const step = (FREQUENCY_MAX - FREQUENCY_MIN) / (into.length - 1);
+  let j = 0;
+  for (let i = 0; i < into.length; i++) {
+    const hz = FREQUENCY_MIN + i * step;
+    while (j < points.length - 2 && points[j + 1]![0] < hz) j++;
+    const [x0, y0] = points[j]!;
+    const [x1, y1] = points[j + 1]!;
+    const t = Math.min(1, Math.max(0, (hz - x0) / (x1 - x0)));
+    into[i] = y0 + (y1 - y0) * t;
+  }
 }
 
 export type Simulation = ReturnType<typeof createSimulation>;
