@@ -357,12 +357,44 @@ test('several bands show their shared values and "Mixed" for the rest', async ({
   await expect(page.getByText('3/24', { exact: true })).toBeVisible();
 });
 
-test('all 24 slots can be filled, and Add stops there', async ({ page }) => {
+test('the band strip selects as a file manager does, and is one Tab stop', async ({ page }) => {
+  await header(page).getByRole('button', { name: 'Next preset' }).click();
+  const strip = page.getByRole('listbox', { name: 'Bands' });
+  const chip = (slot: number) => strip.getByRole('option', { name: new RegExp(`^Band ${slot},`) });
+  const selected = strip.getByRole('option', { selected: true });
+  const toggle = process.platform === 'darwin' ? 'Meta' : 'Control';
+
+  await chip(2).click();
+  await expect(selected).toHaveText(['2']);
+  await chip(4).click({ modifiers: ['Shift'] });
+  await expect(selected).toHaveText(['2', '3', '4']);
+  await chip(3).click({ modifiers: [toggle] });
+  await expect(selected).toHaveText(['2', '4']);
+  await chip(3).click();
+  await expect(selected).toHaveText(['3']);
+
+  // Arrows move focus along the strip; Tab leaves it for the next control.
+  await page.keyboard.press('ArrowRight');
+  await expect(chip(4)).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Add band' })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(chip(4)).toBeFocused();
+});
+
+test('all 24 slots can be filled, then Add gives way to "Full" and the chips fit', async ({
+  page,
+}) => {
   const add = page.getByRole('button', { name: 'Add band' });
   for (let i = 0; i < 24; i++) await add.click();
-  await expect(page.getByText('24/24', { exact: true })).toBeVisible();
-  await expect(add).toBeDisabled();
-  await expect(page.getByRole('listbox', { name: 'Bands' }).getByRole('option')).toHaveCount(24);
+  const count = page.getByText('24/24', { exact: true });
+  await expect(count).toBeVisible();
+  await expect(add).toBeHidden();
+  await expect(page.getByText('Full', { exact: true })).toBeVisible();
+  const chips = page.getByRole('listbox', { name: 'Bands' }).getByRole('option');
+  await expect(chips).toHaveCount(24);
+  const last = (await chips.last().boundingBox())!;
+  expect(last.x + last.width).toBeLessThan((await count.boundingBox())!.x);
   await expect(marker(page, 'Band 24, Bell')).toBeVisible();
 });
 
