@@ -9,20 +9,31 @@ import {
   type StrokeIconProps,
 } from '@soundor/icons/lucide';
 
-import type { Band } from '../bands/catalog';
+import { getSelection } from '../bands/selection';
 import { deleteBands, setBandsField, setSolo } from '../bands/edit';
-import { useBands } from '../bands/use-bands';
+import { getBands } from '../bands/use-bands';
 
-/** Band on, solo and delete, for the selected bands. */
-export function Actions({ bands }: { bands: readonly Band[] }) {
+/** The selected slots, read when a button is pressed. */
+const selectedNow = () => getSelection().map((band) => band.slot);
+
+/**
+ * Band on, solo and delete, for the selected bands: `on` says whether they
+ * are, `solo` whether the one band is soloed (null for several), `count`
+ * how many there are.
+ */
+export function Actions({
+  on,
+  solo,
+  count,
+}: {
+  on: boolean | 'mixed';
+  solo: boolean | null;
+  count: number;
+}) {
   const theme = useTheme();
-  const all = useBands();
-  const slots = bands.map((band) => band.slot);
-  const single = bands.length === 1 ? bands[0]! : null;
-  const allOn = bands.every((band) => band.enabled);
-  const someOn = bands.some((band) => band.enabled);
-  const several = bands.length > 1;
-  const deleteLabel = several ? `Delete ${bands.length} bands` : 'Delete band';
+  const single = solo !== null;
+  const several = count > 1;
+  const deleteLabel = several ? `Delete ${count} bands` : 'Delete band';
 
   return (
     <>
@@ -30,40 +41,52 @@ export function Actions({ bands }: { bands: readonly Band[] }) {
         icon={Power}
         label={several ? 'Bands on' : 'Band on'}
         tip={
-          allOn
+          on === true
             ? 'Bypass (the band stays in place)'
-            : someOn
+            : on === 'mixed'
               ? 'Mixed: press to turn all on'
               : 'Turn on'
         }
-        checked={allOn ? true : someOn ? 'mixed' : false}
+        checked={on}
         color={theme.color.accent}
         onPress={() =>
-          setBandsField(slots, 'enabled', !allOn, allOn ? 'Bypass band' : 'Turn band on')
+          setBandsField(
+            selectedNow(),
+            'enabled',
+            on !== true,
+            on === true ? 'Bypass band' : 'Turn band on',
+          )
         }
       />
       <IconToggle
         icon={Headphones}
         label="Solo band"
         tip={single ? 'Solo: hear this band alone' : 'Solo works on one band'}
-        checked={single?.solo ?? false}
+        checked={solo ?? false}
         disabled={!single}
         color={theme.color.displayWarning}
-        onPress={() => single && setSolo(all, single.slot, !single.solo)}
+        onPress={() => {
+          const [slot] = selectedNow();
+          if (single && slot !== undefined) setSolo(getBands(), slot, !solo);
+        }}
       />
       <Tooltip content={deleteLabel}>
         <Button
           size="md"
           variant="ghost"
           accessibilityLabel={deleteLabel}
-          styles={{ root: { width: 30, paddingHorizontal: 0, justifyContent: 'center' } }}
-          onPress={() => deleteBands(slots)}
+          styles={DELETE_STYLES}
+          onPress={() => deleteBands(selectedNow())}
           leading={<Trash size={14} color={theme.color.textSecondary} strokeWidth={1.75} />}
         />
       </Tooltip>
     </>
   );
 }
+
+const DELETE_STYLES = {
+  root: { width: 30, paddingHorizontal: 0, justifyContent: 'center' },
+} as const;
 
 /**
  * An icon button that stays pressed: graphite with the icon in `color`

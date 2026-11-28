@@ -1,18 +1,34 @@
-import { Plot, type PlotGroupDrag, type PlotSelection } from '@soundor/components';
+import {
+  Plot,
+  type PlotGroupDrag,
+  type PlotSamples,
+  type PlotSelection,
+  type PlotSource,
+} from '@soundor/components';
 import { ring, textStyle, useTheme } from '@soundor/components/theme';
 import { Text, useParameter, useStateValue, View } from '@soundor/react';
 import { Path, Svg } from '@soundor/react/svg';
-import { createRef, useCallback, useMemo, useRef, useState, type RefObject } from 'react';
+import {
+  createRef,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { parameters } from 'soundor:parameters';
-import { state } from 'soundor:state';
+import { state, type AnalyzerFloor } from 'soundor:state';
 import type { PointerEvent, UiNode } from 'soundor:ui';
 
 import type { Analyzer } from '../analyzer/analyzer';
 import { GRAPH_HEIGHT, GRAPH_WIDTH } from '../app/layout';
 import { FREQUENCY_MAX, FREQUENCY_MIN, hasGain, type Band } from '../bands/catalog';
-import { addBand, beginBandsMove, deleteBands, type BandsMove } from '../bands/edit';
-import { setSelection, useSelection } from '../bands/selection';
-import { useBands } from '../bands/use-bands';
+import { addBand, beginBandsMove, type BandsMove } from '../bands/edit';
+import { getSelection, selectionSource, setSelection, useSelectedSlots } from '../bands/selection';
+import { bandsSource, getBands, useBandShapes, useBands } from '../bands/use-bands';
+import { sameItems, useSelector, useStore } from '../utils/store';
 import {
   analyzerTicks,
   floorDecibels,
@@ -24,12 +40,18 @@ import {
 } from './axes';
 import { bandColor } from './band-colors';
 import { BandMarker } from './band-marker';
+import { createCurves } from './curves';
 import { bandAt, moveGroup } from './editing';
 import { BandTooltip, EmptyHint, GraphStatus, PhaseCaption, Readout } from './overlays';
-import { altStore, pointerStore, trackModifiers } from './pointer';
-import { useStore } from '../utils/store';
-import { formatDegrees, phasePoints, phaseTicks } from './phase';
-import { bandResponse, combine, GRID_POINTS, toPoints, type Response } from './response';
+import {
+  altStore,
+  draggingStore,
+  hoveredStore,
+  pointerStore,
+  shownSource,
+  trackModifiers,
+} from './pointer';
+import { formatDegrees, phaseTicks } from './phase';
 import { PlotFrame, SpectrogramLayer, type Frame } from './spectrogram';
 
 /**
@@ -54,10 +76,15 @@ const KEYBOARD_HEIGHT = 22;
 // response, and the band markers on top, which are dragged to edit the
 // bands. A double-click on the graph adds a band; a drag on it selects the
 // markers in a rectangle.
+//
+// A drag is the hot path, and the graph keeps it off React's: the curves are
+// live sources the Plot reads as it draws (./curves), and this view reads the
+// bands only as far as how they are drawn and listed, not where. A drag
+// renders the markers' list, then the dragged marker alone; its line, its
+// tooltip and the readout follow from their own stores.
 export function Graph({ analyzer }: { analyzer: Analyzer }) {
   const theme = useTheme();
-  const bands = useBands();
-  const selection = useSelection();
+  const bands = useBandShapes();
   const bypassed = useParameter(parameters.bypass);
   const range = useStateValue(state.displayRange);
   const analyzerMode = useStateValue(state.analyzerMode);
@@ -67,8 +94,8 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
   const phase = useStateValue(state.displayMode) === 'phase';
   const keyboard = useStateValue(state.showKeyboard);
   const [frame, setFrame] = useState<Frame | null>(null);
+  const [curves] = useState(createCurves);
 
-  const responses = useResponses(bands);
   const soloed = bands.find((band) => band.solo);
   const soloing = soloed !== undefined;
   const limit = rangeDecibels[range];
@@ -77,20 +104,24 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
   const showPost = analyzerAxis && !spectrogram && !bypassed && analyzerMode !== 'pre';
   const fade = bypassed ? BYPASSED_OPACITY : 1;
 
-  const [hovered, setHovered] = useState<number | null>(null);
   const [focusRing, setFocusRing] = useState(false);
-  const [dragging, setDragging] = useState<number | null>(null);
   const markerRefs = useMarkerRefs();
   // Only visible handles take part in graph drags, including group moves.
   // The response and inspector still use the complete set of bands.
-  const visibleBands = bands.filter((band) => !hasGain(band.type) || Math.abs(band.gain) <= limit);
-  const selectionProps = usePlotSelection(visibleBands, limit);
-  // A drag shows its band's values. Otherwise both readings, a marker's
-  // tooltip and the cursor readout, show only while Alt is held, so that
-  // moving over the graph does not cover it.
-  const alt = useStore(altStore);
-  const shown = dragging ?? (alt ? hovered : null);
-  const shownBand = visibleBands.find((band) => band.slot === shown);
+  const visible = useSelector(
+    bandsSource,
+    useCallback((all: readonly Band[]) => visibleSlots(all, limit), [limit]),
+    sameItems,
+  );
+  const selectionProps = usePlotSelection(visible, limit);
+  const layerFrame = useMemo(() => frame && { ...frame, top: frame.top + PLOT_OFFSET }, [frame]);
+  useEffect(
+    () => () => {
+      hoveredStore.set(null);
+      draggingStore.set(null);
+    },
+    [],
+  );
 
   return (
     <View
@@ -110,21 +141,18 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
         ...ring(theme, focusRing),
       }}
     >
-      {spectrogram && frame && (
+      {spectrogram && layerFrame && (
         <SpectrogramLayer
           source={analyzer.spectrogram}
-          frame={{ ...frame, top: frame.top + PLOT_OFFSET }}
+          frame={layerFrame}
           floor={floorDecibels[floor]}
         />
       )}
       <View
-        style={{ position: 'absolute', left: 0, top: PLOT_OFFSET }}
+        style={PLOT_POSITION}
         onPointerMoveCapture={trackPointer}
         onPointerDownCapture={trackPointer}
-        onPointerLeave={() => {
-          pointerStore.set(null);
-          altStore.set(false);
-        }}
+        onPointerLeave={leavePlot}
       >
         <Plot
           width={GRAPH_WIDTH}
@@ -135,26 +163,26 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
           axisLabelGap={14}
           accessibilityLabel="Equalizer response and bands"
           // Clear, so that the spectrogram shows through from under it.
-          styles={{ root: { backgroundColor: 'transparent', borderRadius: 0 } }}
+          styles={PLOT_STYLES}
           selection={selectionProps}
-          onBackgroundDoubleClick={({ data: [hz, db] }) => addBand(bands, bandAt(hz, db))}
+          onBackgroundDoubleClick={addBandAt}
         >
           <Plot.XAxis
-            domain={[FREQUENCY_MIN, FREQUENCY_MAX]}
+            domain={FREQUENCY_DOMAIN}
             scale="log"
             ticks={frequencyTicks}
             minorTicks
             format={formatFrequencyTick}
           />
           <Plot.YAxis
-            domain={[-limit, limit]}
+            domain={gainDomain(limit)}
             ticks={gainTicks(range)}
             format={formatSigned}
             hidden={phase}
           />
           <Plot.YAxis
             id="phase"
-            domain={[-180, 180]}
+            domain={PHASE_DOMAIN}
             ticks={phaseTicks}
             format={formatDegrees}
             hidden={!phase}
@@ -162,7 +190,7 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
           <Plot.YAxis
             id="analyzer"
             position="right"
-            domain={[floorDecibels[floor], 0]}
+            domain={analyzerDomain(floor)}
             ticks={analyzerTicks(floor)}
             format={formatSigned}
             hidden={!analyzerAxis}
@@ -197,21 +225,18 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
           {!phase && <Plot.HorizontalLine value={0} color={theme.color.displayAxis} />}
           {!phase &&
             bands.map((band) => (
-              <Plot.Line
+              <BandCurve
                 key={band.slot}
-                points={responses.points.get(band.slot)!}
+                source={curves.band(band.slot)}
                 color={bandColor(theme, band.slot)}
                 opacity={bandCurveOpacity(band, soloing) * fade}
-                strokeWidth={1}
-                dash={band.enabled ? undefined : [3, 3]}
-                extend
-                hideInReadout
+                dashed={!band.enabled}
               />
             ))}
           {bands.length > 0 && phase && (
             <>
               <Plot.Line
-                points={responses.combined}
+                source={curves.combined}
                 color={theme.color.textInverse}
                 {...MAGNITUDE_GHOST}
                 opacity={MAGNITUDE_GHOST.opacity * fade}
@@ -219,7 +244,7 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
                 hideInReadout
               />
               <Plot.Line
-                points={responses.phase}
+                source={curves.phase}
                 yAxis="phase"
                 color={theme.color.displayWarning}
                 opacity={fade}
@@ -231,14 +256,13 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
           {bands.length > 0 && !phase && (
             <>
               <Plot.Band
-                lower={responses.zero}
-                upper={responses.combined}
+                source={curves.fill}
                 color={theme.color.textInverse}
                 opacity={0.05 * fade}
                 hideInReadout
               />
               <Plot.Line
-                points={responses.combined}
+                source={curves.combined}
                 color={theme.color.textInverse}
                 opacity={fade}
                 strokeWidth={2}
@@ -247,59 +271,15 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
               />
             </>
           )}
-          {dragging !== null && shownBand && (
-            <Plot.VerticalLine
-              value={shownBand.frequency}
-              color={bandColor(theme, shownBand.slot)}
-              dash={[2, 4]}
-            />
-          )}
-          {keyboard && (
-            <Plot.FrequencyKeyboard
-              height={KEYBOARD_HEIGHT}
-              highlightedNotes={selection.map((band) => nearestNote(band.frequency))}
-              styles={{ root: { opacity: 0.8 } }}
-            />
-          )}
-          {visibleBands.map((band) => {
-            const selected = selection.some((s) => s.slot === band.slot);
-            return (
-              <BandMarker
-                key={band.slot}
-                band={band}
-                bands={bands}
-                soloed={band.solo}
-                dimmed={soloing && !band.solo}
-                bypassed={bypassed}
-                selected={selected}
-                nodeRef={markerRefs(band.slot)}
-                onHover={(on) =>
-                  setHovered((current) => (on ? band.slot : current === band.slot ? null : current))
-                }
-                onDragChange={(on) =>
-                  setDragging((current) =>
-                    on ? band.slot : current === band.slot ? null : current,
-                  )
-                }
-                removeLabel={
-                  selected && selection.length > 1 ? 'Delete selected bands' : 'Delete band'
-                }
-                onRemove={() => deleteBands(selected ? selection.map((s) => s.slot) : [band.slot])}
-              />
-            );
-          })}
+          <DragLine />
+          {keyboard && <SelectedNotes />}
+          <Markers limit={limit} soloing={soloing} bypassed={bypassed} markerRefs={markerRefs} />
           {bands.length === 0 && <EmptyHint />}
           {phase && <PhaseCaption />}
-          <Readout hidden={!alt || shown !== null} phase={phase} />
+          <Readout phase={phase} />
         </Plot>
       </View>
-      {shownBand && (
-        <BandTooltip
-          band={shownBand}
-          anchor={markerRefs(shownBand.slot)}
-          dragging={dragging !== null}
-        />
-      )}
+      <ShownTooltip limit={limit} markerRefs={markerRefs} />
       {bypassed ? (
         <GraphStatus label="Bypassed" color={theme.color.displayWarning} />
       ) : soloed ? (
@@ -316,11 +296,169 @@ export function Graph({ analyzer }: { analyzer: Analyzer }) {
   );
 }
 
+const PLOT_POSITION = { position: 'absolute', left: 0, top: PLOT_OFFSET } as const;
+const PLOT_STYLES = { root: { backgroundColor: 'transparent', borderRadius: 0 } };
+const FREQUENCY_DOMAIN: [number, number] = [FREQUENCY_MIN, FREQUENCY_MAX];
+const PHASE_DOMAIN: [number, number] = [-180, 180];
+const DASHED = [3, 3];
+const DRAG_DASH = [2, 4];
+const KEYBOARD_STYLES = { root: { opacity: 0.8 } };
+
+/** One array per value, so an axis is given the same domain at every render. */
+function domains<K extends string | number>(make: (key: K) => [number, number]) {
+  const made = new Map<K, [number, number]>();
+  return (key: K) => {
+    let domain = made.get(key);
+    if (!domain) made.set(key, (domain = make(key)));
+    return domain;
+  };
+}
+const gainDomain = domains((limit: number) => [-limit, limit]);
+const analyzerDomain = domains((floor: AnalyzerFloor) => [floorDecibels[floor], 0]);
+
+const addBandAt = ({ data: [hz, db] }: { data: readonly [number, number] }) =>
+  addBand(getBands(), bandAt(hz, db));
+
+function leavePlot() {
+  pointerStore.set(null);
+  altStore.set(false);
+}
+
+/** The slots whose markers are on the plot: a gain past the range has none. */
+const visibleSlots = (bands: readonly Band[], limit: number) =>
+  bands
+    .filter((band) => !hasGain(band.type) || Math.abs(band.gain) <= limit)
+    .map((band) => band.slot);
+
+/** A band's own curve, drawn from its live source: rendered again only when its look changes. */
+const BandCurve = memo(function BandCurve({
+  source,
+  color,
+  opacity,
+  dashed,
+}: {
+  source: PlotSource<PlotSamples>;
+  color: string;
+  opacity: number;
+  dashed: boolean;
+}) {
+  return (
+    <Plot.Line
+      source={source}
+      color={color}
+      opacity={opacity}
+      strokeWidth={1}
+      dash={dashed ? DASHED : undefined}
+      extend
+      hideInReadout
+    />
+  );
+});
+
+/**
+ * The markers of the bands on the plot. The one list that follows every
+ * edit and selection; each marker is memoized, so a drag renders the dragged
+ * one only, and a new selection those whose state it changed.
+ */
+const Markers = memo(function Markers({
+  limit,
+  soloing,
+  bypassed,
+  markerRefs,
+}: {
+  limit: number;
+  soloing: boolean;
+  bypassed: boolean;
+  markerRefs: (slot: number) => RefObject<UiNode | null>;
+}) {
+  const bands = useBands();
+  const selected = useSelectedSlots();
+  const several = bands.filter((band) => selected.includes(band.slot)).length > 1;
+  return bands.map((band) => {
+    if (hasGain(band.type) && Math.abs(band.gain) > limit) return null;
+    const chosen = selected.includes(band.slot);
+    return (
+      <BandMarker
+        key={band.slot}
+        band={band}
+        soloed={band.solo}
+        dimmed={soloing && !band.solo}
+        bypassed={bypassed}
+        selected={chosen}
+        groupDelete={chosen && several}
+        nodeRef={markerRefs(band.slot)}
+      />
+    );
+  });
+});
+
+/** A dashed line down the plot at the dragged band's frequency. */
+function DragLine() {
+  const slot = useStore(draggingStore);
+  return slot === null ? null : <DragLineAt slot={slot} />;
+}
+
+function DragLineAt({ slot }: { slot: number }) {
+  const theme = useTheme();
+  const frequency = useSelector(
+    bandsSource,
+    useCallback((bands: readonly Band[]) => bands.find((b) => b.slot === slot)?.frequency, [slot]),
+  );
+  if (frequency === undefined) return null;
+  return <Plot.VerticalLine value={frequency} color={bandColor(theme, slot)} dash={DRAG_DASH} />;
+}
+
+/** The selected bands' nearest notes on the pitch keyboard, rendered again only when one changes. */
+function SelectedNotes() {
+  const notes = useSelector(selectionSource, selectedNotes, sameItems);
+  return (
+    <Plot.FrequencyKeyboard
+      height={KEYBOARD_HEIGHT}
+      highlightedNotes={notes}
+      styles={KEYBOARD_STYLES}
+    />
+  );
+}
+
+const selectedNotes = (bands: readonly Band[]) => bands.map((band) => nearestNote(band.frequency));
+
+/** The tooltip of the band whose values the graph shows, over its marker. */
+function ShownTooltip({
+  limit,
+  markerRefs,
+}: {
+  limit: number;
+  markerRefs: (slot: number) => RefObject<UiNode | null>;
+}) {
+  const slot = useStore(shownSource);
+  return slot === null ? null : (
+    <ShownTooltipOf slot={slot} limit={limit} markerRefs={markerRefs} />
+  );
+}
+
+function ShownTooltipOf({
+  slot,
+  limit,
+  markerRefs,
+}: {
+  slot: number;
+  limit: number;
+  markerRefs: (slot: number) => RefObject<UiNode | null>;
+}) {
+  const band = useSelector(
+    bandsSource,
+    useCallback((bands: readonly Band[]) => bands.find((b) => b.slot === slot), [slot]),
+  );
+  const dragging = useStore(draggingStore) !== null;
+  if (!band || (hasGain(band.type) && Math.abs(band.gain) > limit)) return null;
+  return <BandTooltip band={band} anchor={markerRefs(slot)} dragging={dragging} />;
+}
+
 /**
  * What each line is: the summed EQ curve first (or, in the phase view, the
  * phase curve and the magnitude's ghost), then the analyzer's traces.
  */
-function Legend({
+const Legend = memo(function Legend({
   curve,
   pre,
   post,
@@ -359,7 +497,7 @@ function Legend({
       {peak && <TraceKey label="Post peak" color={POST_TRACE.color} dash={PEAK_DASH} />}
     </View>
   );
-}
+});
 
 function TraceKey({
   label,
@@ -425,12 +563,13 @@ function useMarkerRefs() {
  * Ctrl or Cmd toggles; a drag on the background selects a rectangle; a drag
  * of a selected marker moves the visible selected bands, as one undo step.
  */
-function usePlotSelection(bands: readonly Band[], gainLimit: number): PlotSelection {
-  const selection = useSelection().filter((band) => bands.some(({ slot }) => slot === band.slot));
+function usePlotSelection(visible: readonly number[], gainLimit: number): PlotSelection {
+  const limit = useRef(gainLimit);
+  limit.current = gainLimit;
   const group = useRef<{ bands: readonly Band[]; edit: BandsMove } | null>(null);
-  const onGroupDrag = (event: PlotGroupDrag) => {
+  const onGroupDrag = useCallback((event: PlotGroupDrag) => {
     if (event.phase === 'start') {
-      const members = bands.filter((band) => event.ids.includes(String(band.slot)));
+      const members = getBands().filter((band) => event.ids.includes(String(band.slot)));
       group.current = {
         bands: members,
         edit: beginBandsMove(members, ['frequency', 'gain'], 'Move bands'),
@@ -441,22 +580,37 @@ function usePlotSelection(bands: readonly Band[], gainLimit: number): PlotSelect
     if (!active) return;
     if (event.phase === 'move') {
       const { x, y } = event.coordinates;
-      const moved = moveGroup(active.bands, event.delta, x, y, gainLimit);
+      const moved = moveGroup(active.bands, event.delta, x, y, limit.current);
       active.edit.update((band) => moved.get(band.slot)!);
       return;
     }
     group.current = null;
     if (event.phase === 'cancel') active.edit.restore();
     active.edit.end();
-  };
-  return {
-    selectedIds: selection.map((band) => String(band.slot)),
-    onSelectionChange: (ids) => setSelection(ids.map(Number)),
-    multiple: true,
-    rectangle: true,
-    onGroupDrag,
-  };
+  }, []);
+  const shown = useRef(visible);
+  shown.current = visible;
+  // The same object for the Plot's life. The Plot puts it in the context
+  // every Plot.Marker reads, so a new one at each selection would render
+  // every marker. It reads the ids only when the pointer acts, and each
+  // marker is told whether it is selected, so a getter is enough.
+  return useMemo(
+    () => ({
+      get selectedIds() {
+        return getSelection()
+          .filter((band) => shown.current.includes(band.slot))
+          .map((band) => String(band.slot));
+      },
+      onSelectionChange: selectIds,
+      multiple: true,
+      rectangle: true,
+      onGroupDrag,
+    }),
+    [onGroupDrag],
+  );
 }
+
+const selectIds = (ids: readonly string[]) => setSelection(ids.map(Number));
 
 /** A band's own curve: faint beside the combined one, fainter when off or out of a solo. */
 function bandCurveOpacity(band: Band, soloing: boolean) {
@@ -469,7 +623,13 @@ function bandCurveOpacity(band: Band, soloing: boolean) {
 const nearestNote = (hz: number) => Math.round(69 + 12 * Math.log2(hz / 440));
 
 /** "dB" (or "DEG") at the top left, "dBFS" at the top right, "Hz" at the bottom right. */
-function UnitLabels({ analyzer, phase }: { analyzer: boolean; phase: boolean }) {
+const UnitLabels = memo(function UnitLabels({
+  analyzer,
+  phase,
+}: {
+  analyzer: boolean;
+  phase: boolean;
+}) {
   const theme = useTheme();
   const style = textStyle(theme, 'technical', theme.color.displayMuted);
   return (
@@ -488,41 +648,4 @@ function UnitLabels({ analyzer, phase }: { analyzer: boolean; phase: boolean }) 
       <Text style={[style, { position: 'absolute', right: 6, bottom: 6 }]}>Hz</Text>
     </View>
   );
-}
-
-interface Curves {
-  /** Each band's response, by slot. */
-  points: Map<number, [number, number][]>;
-  combined: [number, number][];
-  zero: [number, number][];
-  /** The combined phase, in degrees wrapped to ±180°. */
-  phase: [number, number][];
-}
-
-const zeroPoints = toPoints(new Float64Array(GRID_POINTS));
-
-/** Responses recomputed only for bands whose settings changed. */
-function useResponses(bands: readonly Band[]): Curves {
-  const cache = useMemo(() => new Map<number, { key: string; response: Response }>(), []);
-  return useMemo(() => {
-    const points = new Map<number, [number, number][]>();
-    const active: Response[] = [];
-    for (const band of bands) {
-      const key = `${band.type}|${band.frequency}|${band.gain}|${band.q}|${band.slope}`;
-      let entry = cache.get(band.slot);
-      if (!entry || entry.key !== key) {
-        entry = { key, response: bandResponse(band) };
-        cache.set(band.slot, entry);
-      }
-      points.set(band.slot, toPoints(entry.response.decibels));
-      if (band.enabled) active.push(entry.response);
-    }
-    const combined = combine(active);
-    return {
-      points,
-      combined: toPoints(combined.decibels),
-      zero: zeroPoints,
-      phase: phasePoints(combined.phase),
-    };
-  }, [bands, cache]);
-}
+});

@@ -1,6 +1,6 @@
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Text, View } from '@soundor/react';
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 
 // The inspector's cells: a caption over a row of controls, at fixed widths so
 // no control moves when the selection or the filter type changes. The row is
@@ -73,7 +73,7 @@ export function NotUsed({ reason }: { reason: string }) {
   );
 }
 
-export function CellDivider() {
+export const CellDivider = memo(function CellDivider() {
   const theme = useTheme();
   return <View style={{ width: 1, marginVertical: 12, backgroundColor: theme.color.divider }} />;
-}
+});

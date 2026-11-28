@@ -1,30 +1,43 @@
 import { ContextMenu, Menu } from '@soundor/components';
 
-import { filterTypeLabel, filterTypes, hasGain, type Band } from '../bands/catalog';
-import { duplicateBand, freeSlot, setBandsField, setSolo } from '../bands/edit';
+import { filterTypeLabel, filterTypes, hasGain, MAX_BANDS, type Band } from '../bands/catalog';
+import { duplicateBand, setBandsField, setSolo } from '../bands/edit';
 import { FilterIcon } from '../bands/filter-icon';
+import { bandsSource, getBands } from '../bands/use-bands';
+import { useSelector } from '../utils/store';
 
-/** Actions for the marker that opened the menu. Delete follows the marker's keyboard behavior. */
-export function BandMenu({
-  band,
-  bands,
-  removeLabel,
-  onRemove,
-}: {
+const isFull = (bands: readonly Band[]) => bands.length >= MAX_BANDS;
+
+interface BandMenuProps {
   band: Band;
-  bands: readonly Band[];
   removeLabel: string;
   onRemove: () => void;
-}) {
+}
+
+/**
+ * Actions for the marker that opened the menu. Delete follows the marker's
+ * keyboard behavior. The items are a component of their own, which the menu
+ * renders only while it is open: closed, each marker's menu costs nothing.
+ */
+export function BandMenu(props: BandMenuProps) {
+  return (
+    <ContextMenu.Content accessibilityLabel={`Band ${props.band.slot} actions`} size="sm">
+      <BandMenuItems {...props} />
+    </ContextMenu.Content>
+  );
+}
+
+function BandMenuItems({ band, removeLabel, onRemove }: BandMenuProps) {
+  const full = useSelector(bandsSource, isFull);
   const slots = [band.slot];
   const bypassLabel = band.enabled ? 'Bypass band' : 'Enable band';
   return (
-    <ContextMenu.Content accessibilityLabel={`Band ${band.slot} actions`} size="sm">
+    <>
       <Menu.Label>{`Band ${band.slot} · ${filterTypeLabel(band.type)}`}</Menu.Label>
       <Menu.Item onPress={() => setBandsField(slots, 'enabled', !band.enabled, bypassLabel)}>
         {bypassLabel}
       </Menu.Item>
-      <Menu.Item onPress={() => setSolo(bands, band.slot, !band.solo)}>
+      <Menu.Item onPress={() => setSolo(getBands(), band.slot, !band.solo)}>
         {band.solo ? 'Stop solo' : 'Solo band'}
       </Menu.Item>
       <Menu.Item
@@ -51,10 +64,10 @@ export function BandMenu({
         </Menu.SubContent>
       </Menu.Sub>
       <Menu.Divider />
-      <Menu.Item disabled={freeSlot(bands) === null} onPress={() => duplicateBand(bands, band)}>
+      <Menu.Item disabled={full} onPress={() => duplicateBand(getBands(), band)}>
         Duplicate
       </Menu.Item>
       <Menu.Item onPress={onRemove}>{removeLabel}</Menu.Item>
-    </ContextMenu.Content>
+    </>
   );
 }

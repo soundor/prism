@@ -23,10 +23,10 @@ import { HEADER_HEIGHT } from './layout';
 const PRESET_WIDTH = 236;
 const LOGO_GAP = 64;
 
+// Each part reads only what it shows: an undo step renders Undo and Redo, a
+// band edit at most the preset's "modified" dot.
 export function Header() {
   const theme = useTheme();
-  const bypassed = useParameter(parameters.bypass);
-  const history = useHistory();
   const side = useStateValue(state.compareSide);
   const from = side.toUpperCase();
   const to = otherSide(side).toUpperCase();
@@ -60,20 +60,7 @@ export function Header() {
         />
         <PresetControls />
         <Separator />
-        <IconButton
-          icon={Undo2}
-          label="Undo"
-          tip={history.undoLabel ? `Undo: ${history.undoLabel}` : 'Undo'}
-          disabled={!history.canUndo}
-          onPress={history.undo}
-        />
-        <IconButton
-          icon={Redo2}
-          label="Redo"
-          tip={history.redoLabel ? `Redo: ${history.redoLabel}` : 'Redo'}
-          disabled={!history.canRedo}
-          onPress={history.redo}
-        />
+        <UndoRedo />
         <Separator />
       </View>
       <SegmentedControl<CompareSide>
@@ -84,10 +71,7 @@ export function Header() {
           segment: { height: 18, minWidth: 28, paddingHorizontal: 0 },
           label: { fontSize: 10, lineHeight: 14 },
         }}
-        options={[
-          { value: 'a', label: 'A' },
-          { value: 'b', label: 'B' },
-        ]}
+        options={SIDES}
         value={side}
         onChange={switchCompare}
       />
@@ -100,25 +84,60 @@ export function Header() {
         >
           {`${from} → ${to}`}
         </Button>
-        <Toggle
-          parameter={parameters.bypass}
-          label="Bypass"
-          accessibilityLabel="Global bypass"
-          size="sm"
-          styles={{
-            root: {
-              alignSelf: 'center',
-              ...(bypassed && {
-                backgroundColor: theme.color.selected,
-                borderColor: theme.color.warning,
-              }),
-            },
-            label: bypassed ? { color: theme.color.displayWarning } : undefined,
-            indicator: bypassed ? { backgroundColor: theme.color.displayWarning } : undefined,
-          }}
-        />
+        <BypassToggle />
       </View>
     </View>
+  );
+}
+
+const SIDES = [
+  { value: 'a', label: 'A' },
+  { value: 'b', label: 'B' },
+] as const satisfies readonly { value: CompareSide; label: string }[];
+
+function UndoRedo() {
+  const history = useHistory();
+  return (
+    <>
+      <IconButton
+        icon={Undo2}
+        label="Undo"
+        tip={history.undoLabel ? `Undo: ${history.undoLabel}` : 'Undo'}
+        disabled={!history.canUndo}
+        onPress={history.undo}
+      />
+      <IconButton
+        icon={Redo2}
+        label="Redo"
+        tip={history.redoLabel ? `Redo: ${history.redoLabel}` : 'Redo'}
+        disabled={!history.canRedo}
+        onPress={history.redo}
+      />
+    </>
+  );
+}
+
+function BypassToggle() {
+  const theme = useTheme();
+  const bypassed = useParameter(parameters.bypass);
+  return (
+    <Toggle
+      parameter={parameters.bypass}
+      label="Bypass"
+      accessibilityLabel="Global bypass"
+      size="sm"
+      styles={{
+        root: {
+          alignSelf: 'center',
+          ...(bypassed && {
+            backgroundColor: theme.color.selected,
+            borderColor: theme.color.warning,
+          }),
+        },
+        label: bypassed ? { color: theme.color.displayWarning } : undefined,
+        indicator: bypassed ? { backgroundColor: theme.color.displayWarning } : undefined,
+      }}
+    />
   );
 }
 

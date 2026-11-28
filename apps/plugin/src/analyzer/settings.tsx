@@ -2,6 +2,7 @@ import { Button, Popover, SegmentedControl } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { SlidersHorizontal } from '@soundor/icons/lucide';
 import { Text, useStateValue, View } from '@soundor/react';
+import { useMemo } from 'react';
 import { state, type StateField } from 'soundor:state';
 
 export const compactSegments = {
@@ -135,7 +136,10 @@ function SettingRow<T extends string>({
         label={label}
         value={value}
         onChange={onChange}
-        options={(Object.keys(values) as T[]).map((value) => ({ value, label: values[value] }))}
+        options={useMemo(
+          () => (Object.keys(values) as T[]).map((value) => ({ value, label: values[value] })),
+          [values],
+        )}
       />
     </View>
   );

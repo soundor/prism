@@ -1,18 +1,13 @@
-import { useMemo } from 'react';
-
-import { createStore, useStore } from '../utils/store';
+import { createStore, sameItems, useSelector, useStore, type Source } from '../utils/store';
 
 import type { Band } from './catalog';
-import { useBands } from './use-bands';
+import { bandsSource, sameShapes } from './use-bands';
 
 // Which bands are selected: editor state, never saved, automated or undone.
 // It holds slot numbers; readers see only the slots that hold a band, so a
 // band that is deleted or replaced by a preset leaves the selection by itself.
 
-const sameSlots = (a: readonly number[], b: readonly number[]) =>
-  a.length === b.length && a.every((slot, i) => slot === b[i]);
-
-const selection = createStore<readonly number[]>([], sameSlots);
+const selection = createStore<readonly number[]>([], sameItems);
 
 /** Replaces the selection, in slot order. */
 export function setSelection(slots: Iterable<number>) {
@@ -32,9 +27,43 @@ export function toggleSelected(slot: number) {
 /** The selected slots, active or not; for code outside React. */
 export const selectedSlots = selection.get;
 
-/** The selected bands, in slot order. */
-export function useSelection(): readonly Band[] {
-  const bands = useBands();
-  const slots = useStore(selection);
-  return useMemo(() => bands.filter((band) => slots.includes(band.slot)), [bands, slots]);
+/** The selected slots, active or not, re-rendering only when the selection changes. */
+export const useSelectedSlots = () => useStore(selection);
+
+let cache: { bands: readonly Band[]; slots: readonly number[]; selected: readonly Band[] } | null =
+  null;
+
+/** The selected bands, in slot order; the same array until either list changes. */
+export function getSelection(): readonly Band[] {
+  const bands = bandsSource.get();
+  const slots = selection.get();
+  if (cache?.bands !== bands || cache.slots !== slots) {
+    const selected = bands.filter((band) => slots.includes(band.slot));
+    cache = {
+      bands,
+      slots,
+      selected: cache && sameItems(cache.selected, selected) ? cache.selected : selected,
+    };
+  }
+  return cache.selected;
 }
+
+export const selectionSource: Source<readonly Band[]> = {
+  get: getSelection,
+  subscribe(listener) {
+    const stops = [bandsSource.subscribe(listener), selection.subscribe(listener)];
+    return () => stops.forEach((stop) => stop());
+  },
+};
+
+const itself = <T>(value: T) => value;
+
+/** The selected bands, in slot order, re-rendering on any change to them. */
+export const useSelection = (): readonly Band[] => useStore(selectionSource);
+
+/**
+ * The selected bands, re-rendering only for what `useBandShapes` does: their
+ * frequency, gain and Q may be out of date.
+ */
+export const useSelectionShapes = (): readonly Band[] =>
+  useSelector(selectionSource, itself, sameShapes);

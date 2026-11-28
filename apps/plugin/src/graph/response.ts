@@ -99,6 +99,14 @@ export const gridFrequencies: Float64Array = Float64Array.from(
   (_, i) => FREQUENCY_MIN * (FREQUENCY_MAX / FREQUENCY_MIN) ** (i / (GRID_POINTS - 1)),
 );
 
+// The unit circle at each grid frequency, once: z⁻¹ and z⁻², which every
+// band's response is evaluated at, so a drag computes no trigonometry for them.
+const angle = (frequency: number) => (2 * Math.PI * frequency) / SAMPLE_RATE;
+const cos1 = gridFrequencies.map((f) => Math.cos(angle(f)));
+const sin1 = gridFrequencies.map((f) => Math.sin(angle(f)));
+const cos2 = gridFrequencies.map((f) => Math.cos(2 * angle(f)));
+const sin2 = gridFrequencies.map((f) => Math.sin(2 * angle(f)));
+
 /** Per grid frequency: magnitude in dB and phase in radians (unwrapped). */
 export interface Response {
   decibels: Float64Array;
@@ -107,52 +115,73 @@ export interface Response {
 
 /** A band's response at one frequency: [dB, radians]. */
 export function responseAt(band: Shape, frequency: number): [number, number] {
-  return evaluate(sections(band), frequency);
+  const w = angle(frequency);
+  const out = { decibels: new Float64Array(1), phase: new Float64Array(1) };
+  evaluate(sections(band), out, 0, Math.cos(w), Math.sin(w), Math.cos(2 * w), Math.sin(2 * w));
+  return [out.decibels[0]!, out.phase[0]!];
 }
 
-function evaluate(list: readonly Section[], frequency: number): [number, number] {
-  const w = (2 * Math.PI * frequency) / SAMPLE_RATE;
-  const c1 = Math.cos(w);
-  const s1 = Math.sin(w);
-  const c2 = Math.cos(2 * w);
-  const s2 = Math.sin(2 * w);
+/** Adds the sections' response at one point to `out[i]`; the phase only if `out` has one. */
+function evaluate(
+  list: readonly Section[],
+  out: { decibels: Float64Array; phase?: Float64Array },
+  i: number,
+  c1: number,
+  s1: number,
+  c2: number,
+  s2: number,
+) {
   let decibels = 0;
   let phase = 0;
-  for (const [b0, b1, b2, a0, a1, a2] of list) {
-    const nr = b0 + b1 * c1 + b2 * c2;
+  for (let k = 0; k < list.length; k++) {
+    const section = list[k]!;
+    const b1 = section[1];
+    const b2 = section[2];
+    const a1 = section[4];
+    const a2 = section[5];
+    const nr = section[0] + b1 * c1 + b2 * c2;
     const ni = -(b1 * s1 + b2 * s2);
-    const dr = a0 + a1 * c1 + a2 * c2;
+    const dr = section[3] + a1 * c1 + a2 * c2;
     const di = -(a1 * s1 + a2 * s2);
     decibels += 10 * Math.log10(Math.max((nr * nr + ni * ni) / (dr * dr + di * di), 1e-18));
-    phase += Math.atan2(ni, nr) - Math.atan2(di, dr);
+    if (out.phase) phase += Math.atan2(ni, nr) - Math.atan2(di, dr);
   }
-  return [decibels, phase];
+  out.decibels[i] = decibels;
+  if (out.phase) out.phase[i] = phase;
 }
 
-/** A band's response across the display grid. */
-export function bandResponse(band: Shape): Response {
+/**
+ * A band's response across the display grid. Without `phase`, the phase is
+ * left at zero, which saves most of the work: the magnitude view shows none.
+ */
+export function bandResponse(band: Shape, { phase = true } = {}): Response {
   const list = sections(band);
   const decibels = new Float64Array(GRID_POINTS);
-  const phase = new Float64Array(GRID_POINTS);
-  for (let i = 0; i < GRID_POINTS; i++) {
-    [decibels[i], phase[i]] = evaluate(list, gridFrequencies[i]!);
-  }
-  return { decibels, phase };
+  const phases = new Float64Array(GRID_POINTS);
+  const out = phase ? { decibels, phase: phases } : { decibels };
+  for (let i = 0; i < GRID_POINTS; i++)
+    evaluate(list, out, i, cos1[i]!, sin1[i]!, cos2[i]!, sin2[i]!);
+  return { decibels, phase: phases };
 }
 
 /** Bands in series: magnitudes in dB and phases add. */
 export function combine(responses: readonly Response[]): Response {
   const decibels = new Float64Array(GRID_POINTS);
   const phase = new Float64Array(GRID_POINTS);
-  for (const response of responses)
+  for (const response of responses) {
+    const d = response.decibels;
+    const p = response.phase;
     for (let i = 0; i < GRID_POINTS; i++) {
-      decibels[i]! += response.decibels[i]!;
-      phase[i]! += response.phase[i]!;
+      decibels[i]! += d[i]!;
+      phase[i]! += p[i]!;
     }
+  }
   return { decibels, phase };
 }
 
 /** Grid points as [Hz, value] pairs, for a Plot series. */
 export function toPoints(values: ArrayLike<number>): [number, number][] {
-  return Array.from(gridFrequencies, (frequency, i) => [frequency, values[i]!]);
+  const points: [number, number][] = [];
+  for (let i = 0; i < GRID_POINTS; i++) points.push([gridFrequencies[i]!, values[i]!]);
+  return points;
 }
