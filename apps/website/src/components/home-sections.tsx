@@ -2,13 +2,14 @@ import { Link } from '@tanstack/react-router';
 import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Card, Cards } from 'fumadocs-ui/components/card';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { buttonVariants } from 'fumadocs-ui/components/ui/button';
 import {
   AudioLines,
   BookOpen,
   Code,
+  ExternalLink,
   History,
   KeyboardMusic,
-  LayoutGrid,
   ListChecks,
   MousePointer2,
   MousePointerClick,
@@ -20,7 +21,7 @@ import {
   Waves,
   WavesLadder,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 import { soundor } from '../layout-options';
 import { Curve, groups } from './filter-shapes';
@@ -226,22 +227,108 @@ export function Docs() {
   );
 }
 
+/** A Prism curve with four bands, one in each of the plugin's band colours. */
+const signoffCurve =
+  'M0 50 C 80 50, 140 50, 200 62 S 320 100, 380 100 S 460 70, 500 66 S 580 35, 620 35 S 700 66, 740 66 S 820 55, 960 55';
+const signoffBands = [
+  { x: 110, y: 50, color: 'var(--prism-low)' },
+  { x: 380, y: 100, color: 'var(--prism-low-mid)' },
+  { x: 620, y: 35, color: 'var(--prism-high-mid)' },
+  { x: 880, y: 55, color: 'var(--prism-high)' },
+];
+
+function SignoffGraph() {
+  const id = useId();
+  return (
+    <svg
+      aria-hidden
+      viewBox="0 0 960 130"
+      preserveAspectRatio="none"
+      className="block h-24 w-full sm:h-28"
+    >
+      <defs>
+        <linearGradient id={`${id}-line`} x1="0" x2="1" y1="0" y2="0">
+          {signoffBands.map((band, i) => (
+            <stop
+              key={band.x}
+              offset={i / (signoffBands.length - 1)}
+              style={{ stopColor: band.color }}
+            />
+          ))}
+        </linearGradient>
+        <linearGradient id={`${id}-fill`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0" style={{ stopColor: 'var(--prism-low-mid)', stopOpacity: 0.16 }} />
+          <stop offset="1" style={{ stopColor: 'var(--prism-low-mid)', stopOpacity: 0 }} />
+        </linearGradient>
+      </defs>
+      <line
+        x1="0"
+        x2="960"
+        y1="70"
+        y2="70"
+        className="stroke-fd-border"
+        strokeDasharray="4 6"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path d={`${signoffCurve} L 960 130 L 0 130 Z`} fill={`url(#${id}-fill)`} />
+      <path
+        d={signoffCurve}
+        fill="none"
+        stroke={`url(#${id}-line)`}
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+/**
+ * The page's sign-off: a panel that points to the other plugins, above a small
+ * Prism curve, so it reads as the end of the page rather than one more card.
+ */
 export function MorePlugins() {
   return (
-    <Block
-      id="more-plugins"
-      title="More plugins"
-      lead="Prism is one of the plugins built with Soundor."
-    >
-      <Cards className="mx-auto max-w-md grid-cols-1">
-        <Card
-          className={row}
-          icon={<LayoutGrid />}
-          title="All Soundor plugins"
-          href={`${soundor}/plugins`}
-          description="See the others on soundor.dev."
-        />
-      </Cards>
-    </Block>
+    <section aria-labelledby="more-plugins" className="pb-16 sm:pb-24">
+      <div className="overflow-hidden rounded-2xl border bg-fd-card">
+        <div className="flex flex-col items-start gap-6 px-6 pt-10 sm:flex-row sm:items-end sm:justify-between sm:px-10 sm:pt-12">
+          <div className="max-w-md">
+            <h2
+              id="more-plugins"
+              className="text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+            >
+              More plugins built with Soundor
+            </h2>
+            <p className="mt-2 text-balance text-fd-muted-foreground">
+              Prism is one of them. The rest are listed on soundor.dev.
+            </p>
+          </div>
+          <a
+            href={`${soundor}/plugins`}
+            className={buttonVariants({
+              variant: 'primary',
+              className: 'shrink-0 gap-1.5 px-4 py-2.5',
+            })}
+          >
+            Browse plugins <ExternalLink aria-hidden className="size-4" />
+          </a>
+        </div>
+        <div className="relative mt-6 sm:mt-8">
+          <SignoffGraph />
+          {/* Markers as HTML, so they stay round whatever the panel's width. */}
+          {signoffBands.map((band) => (
+            <span
+              key={band.x}
+              aria-hidden
+              className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-fd-card shadow-sm"
+              style={{
+                left: `${(band.x / 960) * 100}%`,
+                top: `${(band.y / 130) * 100}%`,
+                backgroundColor: band.color,
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
