@@ -1,6 +1,6 @@
 {
   "name": "prism",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Soundor Prism, a 24-band parametric VST3 and web equalizer.",
   "license": "AGPL-3.0-only",
