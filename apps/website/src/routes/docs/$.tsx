@@ -11,9 +11,8 @@ import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { ComponentProps } from 'react';
 
 import { Downloads } from '../../components/downloads';
-import { Player } from '../../components/player';
 import { PageLegal } from '../../components/site-footer';
-import { layoutOptions, soundorLink } from '../../layout-options';
+import { demoLink, layoutOptions, soundorLink } from '../../layout-options';
 import { source } from '../../source';
 
 export const Route = createFileRoute('/docs/$')({
@@ -39,7 +38,7 @@ function Documentation() {
   return (
     <DocsLayout
       {...layoutOptions}
-      links={[soundorLink]}
+      links={[demoLink, soundorLink]}
       tree={source.getPageTree()}
       sidebar={{ tabs: false }}
     >
@@ -47,7 +46,7 @@ function Documentation() {
         <DocsTitle>{title}</DocsTitle>
         <DocsDescription>{description}</DocsDescription>
         <DocsBody>
-          <Content components={{ ...defaultMdxComponents, Downloads, Player }} />
+          <Content components={{ ...defaultMdxComponents, Downloads }} />
         </DocsBody>
       </DocsPage>
     </DocsLayout>
