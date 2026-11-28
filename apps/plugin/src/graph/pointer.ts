@@ -1,4 +1,4 @@
-import { createStore } from '../store';
+import { createStore } from '../utils/store';
 
 // The pointer over the graph, and whether Shift is held, kept outside React
 // state so that a pointer move renders only the views that read them.

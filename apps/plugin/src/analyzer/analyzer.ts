@@ -4,7 +4,7 @@ import { state } from 'soundor:state';
 
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 import { GRID_POINTS, gridFrequencies, toPoints } from '../graph/response';
-import { createStore } from '../store';
+import { createStore } from '../utils/store';
 
 // The analyzer's traces and the spectrogram, from what the processor
 // measures (see lib/src/analyzer) about 60 times a second: the pre and post
