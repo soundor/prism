@@ -5,7 +5,7 @@ import { AudioWaveform } from 'lucide-react';
 import { Downloads } from '../components/downloads';
 import { Gallery } from '../components/gallery';
 import { HeroActions } from '../components/hero-actions';
-import { Bands, Docs, Graph, Questions } from '../components/home-sections';
+import { Bands, Docs, Graph, MorePlugins, Questions } from '../components/home-sections';
 import { SiteFooter } from '../components/site-footer';
 import { layoutOptions, soundor } from '../layout-options';
 import { released, version } from '../release';
@@ -71,6 +71,7 @@ function Home() {
             <Graph />
             <Questions />
             <Docs />
+            <MorePlugins />
           </div>
         </div>
       </main>

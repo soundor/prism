@@ -55,6 +55,9 @@ export function SiteFooter() {
             <a className={link} href={repository}>
               GitHub
             </a>
+            <a className={link} href={`${soundor}/plugins`}>
+              More plugins
+            </a>
             <a className={link} href={`${soundor}/`}>
               Soundor
             </a>

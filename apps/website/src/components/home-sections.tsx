@@ -8,6 +8,7 @@ import {
   Code,
   History,
   KeyboardMusic,
+  LayoutGrid,
   ListChecks,
   MousePointer2,
   MousePointerClick,
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { soundor } from '../layout-options';
 import { Curve, groups } from './filter-shapes';
 
 /**
@@ -218,6 +220,26 @@ export function Docs() {
           title="Build the VST3"
           href="/docs/building"
           description="From source, for Linux and Windows."
+        />
+      </Cards>
+    </Block>
+  );
+}
+
+export function MorePlugins() {
+  return (
+    <Block
+      id="more-plugins"
+      title="More plugins"
+      lead="Prism is one of the plugins built with Soundor."
+    >
+      <Cards className="mx-auto max-w-md grid-cols-1">
+        <Card
+          className={row}
+          icon={<LayoutGrid />}
+          title="All Soundor plugins"
+          href={`${soundor}/plugins`}
+          description="See the others on soundor.dev."
         />
       </Cards>
     </Block>
