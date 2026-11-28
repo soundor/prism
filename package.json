@@ -14,7 +14,7 @@
     "test": "turbo run test",
     "test:e2e": "turbo run test:e2e",
     "test:rust": "turbo run test:rust",
-    "test:vst3": "pnpm --filter prism build:vst3 && pnpm --filter prism test:vst3",
+    "test:vst3": "pnpm --filter prism build:vst3 && pnpm --filter prism build:vst3:debug && pnpm --filter prism test:vst3",
     "website": "turbo run dev --filter=prism-website"
   },
   "devDependencies": {
