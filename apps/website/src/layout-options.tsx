@@ -7,6 +7,8 @@ import { repository } from './release';
 
 export const soundor = 'https://soundor.dev';
 export const soundorLink = { text: 'Soundor', url: `${soundor}/`, external: true };
+/** The interactive example, on a page of its own. */
+export const demoLink = { text: 'Demo', url: '/demo' };
 
 export const layoutOptions = {
   nav: {
@@ -24,6 +26,7 @@ export const layoutOptions = {
   },
   githubUrl: repository,
   links: [
+    demoLink,
     { text: 'Changelog', url: '/docs/changelog' },
     {
       ...soundorLink,
