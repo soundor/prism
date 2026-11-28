@@ -30,5 +30,6 @@ minimumReleaseAgeExclude:
   - '@soundor/web-runtime@0.18.0'
   - soundor@0.21.1
   - '@soundor/vitest-e2e@0.21.1'
+  - swiper@14.5.0
 patchedDependencies:
   '@soundor/components@0.6.0': patches/@soundor__components@0.6.0.patch

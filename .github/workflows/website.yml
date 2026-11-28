@@ -47,6 +47,12 @@ jobs:
         run: node apps/website/scripts/check-release.ts
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
         id: site
+      # The website's build screenshots the web demo in Chromium.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm --filter prism-website exec playwright install --with-deps chromium
       - run: pnpm build
         env:
           PRISM_SITE_BASE: ${{ steps.site.outputs.base_path }}/

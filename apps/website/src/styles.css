@@ -8,3 +8,11 @@
   --prism-high-mid: #c4ec6f;
   --prism-high: #ffc043;
 }
+
+/* The band colours, deeper on a light page so that lines on it read. */
+:root:not(.dark) {
+  --prism-low: #e2621b;
+  --prism-low-mid: #7b5ce6;
+  --prism-high-mid: #5d8f0a;
+  --prism-high: #e0a21a;
+}

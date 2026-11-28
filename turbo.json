@@ -21,6 +21,7 @@
     "prism-website#build": {
       "dependsOn": ["prism#build:web"],
       "env": ["PRISM_SITE_BASE", "VITE_PRISM_SITE_ORIGIN"],
+      "passThroughEnv": ["PLAYWRIGHT_BROWSERS_PATH"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/assets/brand/**",
@@ -31,6 +32,7 @@
     },
     "prism-website#dev": {
       "dependsOn": ["prism#build:web"],
+      "passThroughEnv": ["PLAYWRIGHT_BROWSERS_PATH"],
       "cache": false,
       "persistent": true
     }
