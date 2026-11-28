@@ -1,3 +1,4 @@
+import { ResizeGrip } from '@soundor/components';
 import { useTheme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
 import { useEffect, useState } from 'react';
@@ -57,6 +58,8 @@ export function App() {
       </View>
       <Inspector />
       <Footer onFreeze={analyzer.setFrozen} />
+      {/* Bottom-right, over the footer's end; nothing when the host cannot resize. */}
+      <ResizeGrip />
     </View>
   );
 }
