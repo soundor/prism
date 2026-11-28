@@ -18,7 +18,31 @@ const extra = {
   azure: '#7fa7ff',
 } as const;
 
+/**
+ * A value worked out once per theme and key: the colours below are asked for
+ * at every render of every marker, chip and curve, and some take dozens of
+ * contrast measurements.
+ */
+function perTheme<K, V>(compute: (theme: Theme, key: K) => V): (theme: Theme, key: K) => V {
+  const caches = new WeakMap<Theme, Map<K, V>>();
+  return (theme, key) => {
+    let cache = caches.get(theme);
+    if (!cache) caches.set(theme, (cache = new Map()));
+    let value = cache.get(key);
+    if (value === undefined) cache.set(key, (value = compute(theme, key)));
+    return value;
+  };
+}
+
+const palettes = new WeakMap<Theme, readonly string[]>();
+
 export function bandPalette(theme: Theme): readonly string[] {
+  let palette = palettes.get(theme);
+  if (!palette) palettes.set(theme, (palette = makePalette(theme)));
+  return palette;
+}
+
+function makePalette(theme: Theme): readonly string[] {
   const c = theme.color;
   return [
     c.lavender,
@@ -46,12 +70,12 @@ export function bandColor(theme: Theme, slot: number): string {
  * graph's dark surface and the light inverse text contrasts more with the
  * band's colour.
  */
-export function bandForeground(theme: Theme, slot: number): string {
+export const bandForeground = perTheme((theme, slot: number): string => {
   const background = bandColor(theme, slot);
   const dark = theme.color.display;
   const light = theme.color.textInverse;
   return contrastRatio(background, dark) >= contrastRatio(background, light) ? dark : light;
-}
+});
 
 /** WCAG 2 relative luminance of a `#rrggbb` colour. */
 function luminance(hex: string): number {
@@ -77,13 +101,18 @@ export const GRAPHIC_CONTRAST = 3;
  * graph colours are pastels for the dark display and barely show there.
  */
 export function bandColorOnLight(theme: Theme, slot: number, background: string): string {
-  const color = bandColor(theme, slot);
+  return onLight(theme, `${slot} ${background}`);
+}
+
+const onLight = perTheme((theme, key: string): string => {
+  const [slot, background] = key.split(' ') as [string, string];
+  const color = bandColor(theme, Number(slot));
   for (let shade = 1; shade > 0; shade -= 0.02) {
     const darker = scale(color, shade);
     if (contrastRatio(darker, background) >= GRAPHIC_CONTRAST) return darker;
   }
   return '#000000';
-}
+});
 
 /** Each channel times `factor`, as `#rrggbb`. */
 function scale(hex: string, factor: number): string {

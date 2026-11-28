@@ -6,7 +6,7 @@ import {
 } from '@soundor/components';
 import { useTheme, type Theme } from '@soundor/components/theme';
 import { View } from '@soundor/react';
-import { useLayoutEffect, useMemo } from 'react';
+import { memo, useLayoutEffect, useMemo } from 'react';
 
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 import { hexToOklab, mixOklab } from './oklab';
@@ -43,7 +43,7 @@ export function PlotFrame({ onChange }: { onChange: (frame: Frame) => void }) {
  * The spectrogram, laid at `frame` (in the parent's pixels). Its colours span
  * the analyzer's range, from `floor` to 0 dBFS, as the dBFS axis does.
  */
-export function SpectrogramLayer({
+export const SpectrogramLayer = memo(function SpectrogramLayer({
   source,
   frame,
   floor,
@@ -76,11 +76,13 @@ export function SpectrogramLayer({
         orientation="vertical"
         colorMap={colorMap}
         accessibilityLabel="Spectrogram"
-        styles={{ root: { borderRadius: 0 } }}
+        styles={SPECTROGRAM_STYLES}
       />
     </View>
   );
-}
+});
+
+const SPECTROGRAM_STYLES = { root: { borderRadius: 0 } };
 
 /**
  * A sequential ramp in Prism's purple: from the graph's ground, so that

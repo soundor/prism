@@ -1,13 +1,15 @@
 import { useParameter, usePresetSelection } from '@soundor/react';
+import { useCallback } from 'react';
 import { history } from 'soundor:history';
 import { parameters } from 'soundor:parameters';
 import { presets, type FactoryPresetInfo } from 'soundor:presets';
 import { state } from 'soundor:state';
 
 import { factoryPresets } from '../../factory-presets';
-import { bandFields, defaultBand } from '../bands/catalog';
+import { bandFields, defaultBand, MAX_BANDS, type Band, type BandSettings } from '../bands/catalog';
 import { clearSelection } from '../bands/selection';
-import { useAllBands } from '../bands/use-bands';
+import { allBandsSource } from '../bands/use-bands';
+import { useSelector } from '../utils/store';
 
 export function loadFactoryPreset(preset: FactoryPresetInfo) {
   const view = {
@@ -44,25 +46,51 @@ export function loadFactoryPreset(preset: FactoryPresetInfo) {
   clearSelection();
 }
 
+type FactoryPreset = (typeof factoryPresets)[number];
+const expected = new Map<FactoryPreset, readonly BandSettings[]>();
+
+/** Each slot as the preset sets it, numbers rounded as the parameters store them. */
+function expectedBands(factory: FactoryPreset): readonly BandSettings[] {
+  let bands = expected.get(factory);
+  if (!bands) {
+    bands = Array.from({ length: MAX_BANDS }, (_, i) => {
+      const spec = factory.bands[i];
+      const band = spec ? { ...defaultBand, ...spec, active: true } : defaultBand;
+      return Object.fromEntries(
+        bandFields.map((field) => {
+          const value = band[field];
+          return [field, typeof value === 'number' ? Math.fround(value) : value];
+        }),
+      ) as unknown as BandSettings;
+    });
+    expected.set(factory, bands);
+  }
+  return bands;
+}
+
+/**
+ * The factory preset loaded, and whether its bands or gains were changed
+ * since. It renders when that changes, not at every edit.
+ */
 export function useFactorySelection() {
   const { factoryId } = usePresetSelection(presets);
-  const bands = useAllBands();
   const inputGain = useParameter(parameters.inputGain);
   const outputGain = useParameter(parameters.outputGain);
   const factory = factoryPresets.find((preset) => preset.id === factoryId);
   // Compare only EQ and I/O gain values. Soundor's modified flag also compares
   // persistent state and would mark changes such as display range as edits.
-  const modified =
-    !!factory &&
-    (inputGain !== 0 ||
-      outputGain !== 0 ||
-      bands.some((band, i) => {
-        const spec = factory.bands[i];
-        const expected = spec ? { ...defaultBand, ...spec, active: true } : defaultBand;
-        return bandFields.some((field) => {
-          const value = expected[field];
-          return band[field] !== (typeof value === 'number' ? Math.fround(value) : value);
-        });
-      }));
+  const bandsChanged = useSelector(
+    allBandsSource,
+    useCallback(
+      (bands: readonly Band[]) =>
+        !!factory &&
+        bands.some((band, i) => {
+          const expected = expectedBands(factory)[i]!;
+          return bandFields.some((field) => band[field] !== expected[field]);
+        }),
+      [factory],
+    ),
+  );
+  const modified = !!factory && (inputGain !== 0 || outputGain !== 0 || bandsChanged);
   return { factoryId, modified };
 }

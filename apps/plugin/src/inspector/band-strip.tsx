@@ -3,11 +3,13 @@ import { textStyle, useTheme } from '@soundor/components/theme';
 import { Headphones, Plus } from '@soundor/icons/lucide';
 import { Text, View } from '@soundor/react';
 import { Circle, Rect, Svg } from '@soundor/react/svg';
+import { memo, useMemo } from 'react';
 
 import { filterTypeLabel, hasSlope, MAX_BANDS, type Band } from '../bands/catalog';
 import { addBand } from '../bands/edit';
-import { setSelection, useSelection } from '../bands/selection';
-import { useBands } from '../bands/use-bands';
+import { selectionSource, setSelection } from '../bands/selection';
+import { getBands, useBandShapes } from '../bands/use-bands';
+import { sameItems, useSelector } from '../utils/store';
 import { bandColor, bandColorOnLight } from '../graph/band-colors';
 
 export const STRIP_HEIGHT = 32;
@@ -20,12 +22,32 @@ const DOT = 10;
  * that band alone, Ctrl (Cmd on macOS) adds or removes one, Shift selects the
  * range from the last one chosen. Then how many slots are in use, and Add,
  * or "Full" once all of them are.
+ *
+ * None of it shows frequency, gain or Q, so it renders for none of them: not
+ * while a band is dragged.
  */
 export function BandStrip() {
   const theme = useTheme();
-  const bands = useBands();
-  const selected = useSelection().map((band) => String(band.slot));
+  const bands = useBandShapes();
+  const selected = useSelector(selectionSource, selectedIds, sameItems);
   const full = bands.length >= MAX_BANDS;
+  const items = useMemo(
+    () => bands.map((band) => ({ id: String(band.slot), label: chipLabel(band) })),
+    [bands],
+  );
+  const bySlot = useMemo(() => new Map(bands.map((band) => [String(band.slot), band])), [bands]);
+  const styles = useMemo(
+    () => ({
+      root: { gap: 3 },
+      item: {
+        padding: 0,
+        borderWidth: 0,
+        borderRadius: theme.radius.radiusSm,
+        backgroundColor: 'transparent',
+      },
+    }),
+    [theme],
+  );
 
   return (
     <View
@@ -48,24 +70,12 @@ export function BandStrip() {
             accessibilityLabel="Bands"
             orientation="horizontal"
             selectionMode="extended"
-            items={bands.map((band) => ({ id: String(band.slot), label: chipLabel(band) }))}
+            items={items}
             selectedIds={selected}
-            onSelectionChange={(ids) => setSelection(ids.map(Number))}
-            styles={{
-              root: { gap: 3 },
-              item: {
-                padding: 0,
-                borderWidth: 0,
-                borderRadius: theme.radius.radiusSm,
-                backgroundColor: 'transparent',
-              },
-            }}
+            onSelectionChange={selectIds}
+            styles={styles}
             renderItem={(item, state) => (
-              <Chip
-                band={bands.find((band) => String(band.slot) === item.id)!}
-                selected={state.selected}
-                hovered={state.hovered}
-              />
+              <Chip band={bySlot.get(item.id)!} selected={state.selected} hovered={state.hovered} />
             )}
           />
         )}
@@ -83,7 +93,7 @@ export function BandStrip() {
             size="sm"
             variant="ghost"
             accessibilityLabel="Add band"
-            onPress={() => addBand(bands)}
+            onPress={() => addBand(getBands())}
             leading={<Plus size={12} color={theme.color.textSecondary} strokeWidth={1.8} />}
           >
             Add
@@ -93,6 +103,9 @@ export function BandStrip() {
     </View>
   );
 }
+
+const selectedIds = (bands: readonly Band[]) => bands.map((band) => String(band.slot));
+const selectIds = (ids: readonly string[]) => setSelection(ids.map(Number));
 
 function chipLabel(band: Band) {
   const parts = [`Band ${band.slot}`, filterTypeLabel(band.type)];
@@ -105,7 +118,15 @@ function chipLabel(band: Band) {
  * The band's colour as a dot (square for cuts, hollow when bypassed) and its
  * number; a selected chip is outlined and bold.
  */
-function Chip({ band, selected, hovered }: { band: Band; selected: boolean; hovered: boolean }) {
+const Chip = memo(function Chip({
+  band,
+  selected,
+  hovered,
+}: {
+  band: Band;
+  selected: boolean;
+  hovered: boolean;
+}) {
   const theme = useTheme();
   const background = selected
     ? theme.color.surfaceInset
@@ -149,7 +170,7 @@ function Chip({ band, selected, hovered }: { band: Band; selected: boolean; hove
       {band.solo && <Headphones size={10} color={theme.color.warning} strokeWidth={2} />}
     </View>
   );
-}
+});
 
 /**
  * The band's own colour, edged with a deeper shade of it so the pastel holds

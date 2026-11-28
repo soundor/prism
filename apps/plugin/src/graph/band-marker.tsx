@@ -2,7 +2,7 @@ import { ContextMenu, Plot, type PlotMarkerState } from '@soundor/components';
 import { useTheme } from '@soundor/components/theme';
 import { Text, View } from '@soundor/react';
 import { Circle, Rect, Svg } from '@soundor/react/svg';
-import { useEffect, useRef, type RefObject } from 'react';
+import { memo, useEffect, useRef, type RefObject } from 'react';
 import type { UiNode } from 'soundor:ui';
 
 import {
@@ -13,11 +13,13 @@ import {
   hasSlope,
   type Band,
 } from '../bands/catalog';
-import { beginBandsMove, setBandsField, type BandsMove } from '../bands/edit';
+import { beginBandsMove, deleteBands, setBandsField, type BandsMove } from '../bands/edit';
+import { getSelection } from '../bands/selection';
 import { describeBand } from '../bands/format';
 import { bandColor, bandForeground } from './band-colors';
 import { BandMenu } from './band-menu';
 import { WHEEL_SETTLE_MS, wheelQ } from './editing';
+import { claim, draggingStore, hoveredStore } from './pointer';
 
 /**
  * The marker's box; the face is centred in it. Every size is even, so each
@@ -35,7 +37,6 @@ const HIT_RADIUS = 14;
 
 export interface BandMarkerProps {
   band: Band;
-  bands: readonly Band[];
   /** Another band is soloed: this one is drawn faded. */
   dimmed: boolean;
   /** This band is soloed. */
@@ -44,16 +45,14 @@ export interface BandMarkerProps {
   bypassed: boolean;
   /** In the editor's selection: a larger face with a ring. */
   selected: boolean;
+  /** Selected with others: Delete removes them all. */
+  groupDelete: boolean;
   /** The marker's node, for its tooltip. */
   nodeRef: RefObject<UiNode | null>;
-  /** The pointer is over it, or has left it. */
-  onHover: (hovered: boolean) => void;
-  /** A drag, or a run of arrow keys, begins or ends. */
-  onDragChange: (dragging: boolean) => void;
-  removeLabel: string;
-  /** Delete or Backspace while it has focus, or Delete in its menu. */
-  onRemove: () => void;
 }
+
+const setHovered = claim(hoveredStore);
+const setDragging = claim(draggingStore);
 
 /**
  * A band's numbered marker at its frequency and gain; gain-less types sit
@@ -63,21 +62,23 @@ export interface BandMarkerProps {
  *
  * Dragging it, or its arrow keys, set frequency and gain; the wheel sets Q
  * and a double-click puts the gain back to 0 dB. Each is one undo step.
+ *
+ * Memoized, with only values for props: a drag renders the dragged marker,
+ * not the others. Hover and drag go to the graph's stores, not to its state.
  */
-export function BandMarker({
+export const BandMarker = memo(function BandMarker({
   band,
-  bands,
   dimmed,
   soloed,
   bypassed,
   selected,
+  groupDelete,
   nodeRef,
-  onHover,
-  onDragChange,
-  removeLabel,
-  onRemove,
 }: BandMarkerProps) {
   const gain = hasGain(band.type);
+  const removeLabel = groupDelete ? 'Delete selected bands' : 'Delete band';
+  // Read when it happens, so the marker need not render for the selection.
+  const onRemove = () => deleteBands(groupDelete ? getSelection().map((s) => s.slot) : [band.slot]);
   // Begun at the first move, not at the drag's start: a drag of a group
   // moves this band with the others, through the Plot's group handler.
   const move = useRef<BandsMove | null>(null);
@@ -109,10 +110,9 @@ export function BandMarker({
               dimmed={dimmed}
               soloed={soloed}
               bypassed={bypassed}
-              onHover={onHover}
             />
           )}
-          onMoveStart={() => onDragChange(true)}
+          onMoveStart={() => setDragging(band.slot, true)}
           onMove={([frequency, decibels]) => {
             move.current ??= beginBandsMove(
               [band],
@@ -125,7 +125,7 @@ export function BandMarker({
             const edit = move.current;
             move.current = null;
             edit?.end();
-            onDragChange(false);
+            setDragging(band.slot, false);
           }}
           onDoubleClick={() => {
             if (gain && band.gain !== 0) setBandsField([band.slot], 'gain', 0, 'Reset gain');
@@ -134,10 +134,10 @@ export function BandMarker({
           onRemove={onRemove}
         />
       </ContextMenu.Trigger>
-      <BandMenu band={band} bands={bands} removeLabel={removeLabel} onRemove={onRemove} />
+      <BandMenu band={band} removeLabel={removeLabel} onRemove={onRemove} />
     </ContextMenu>
   );
-}
+});
 
 /**
  * The wheel's handler: Q up or down a notch at a time. The notches of one
@@ -176,25 +176,19 @@ function useWheelQ(band: Band) {
   };
 }
 
-interface MarkerFaceProps extends Pick<
-  BandMarkerProps,
-  'band' | 'dimmed' | 'soloed' | 'bypassed' | 'onHover'
-> {
+interface MarkerFaceProps extends Pick<BandMarkerProps, 'band' | 'dimmed' | 'soloed' | 'bypassed'> {
   state: PlotMarkerState;
 }
 
-function MarkerFace({ band, state, dimmed, soloed, bypassed, onHover }: MarkerFaceProps) {
+function MarkerFace({ band, state, dimmed, soloed, bypassed }: MarkerFaceProps) {
   const theme = useTheme();
   const hovered = state.hovered;
-  // The latest callback, so that a new one each render does not report the
-  // hover again.
-  const report = useRef(onHover);
-  report.current = onHover;
+  const slot = band.slot;
   useEffect(() => {
     if (!hovered) return;
-    report.current(true);
-    return () => report.current(false);
-  }, [hovered]);
+    setHovered(slot, true);
+    return () => setHovered(slot, false);
+  }, [hovered, slot]);
   const color = bandColor(theme, band.slot);
   const ringed = state.selected || state.dragging;
   const size = ringed ? FACE_LARGE : FACE;

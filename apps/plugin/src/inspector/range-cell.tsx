@@ -2,8 +2,9 @@ import { Knob, ValueField, type RangeParameter } from '@soundor/components';
 import { useRef, useState } from 'react';
 import { parameters } from 'soundor:parameters';
 
-import { bandParameterId, type Band } from '../bands/catalog';
+import { bandParameterId } from '../bands/catalog';
 import { beginBandsEdit, type BandsEdit } from '../bands/edit';
+import { useSelection } from '../bands/selection';
 
 // A knob and a value field for frequency, gain or Q. One band binds them to
 // its parameters. Several bands with one value edit them all to the same
@@ -38,9 +39,10 @@ export interface RangeSpec {
 const rangeParameter = (slot: number, field: RangeField) =>
   (parameters as unknown as Record<string, RangeParameter>)[bandParameterId(slot, field)]!;
 
-export function RangeControls({ spec, bands }: { spec: RangeSpec; bands: readonly Band[] }) {
-  if (bands.length === 1) return <SingleBand spec={spec} slot={bands[0]!.slot} />;
-  return <SeveralBands spec={spec} bands={bands} />;
+/** The controls for one band, `slot`, or for the selected bands when it is null. */
+export function RangeControls({ spec, slot }: { spec: RangeSpec; slot: number | null }) {
+  if (slot !== null) return <SingleBand spec={spec} slot={slot} />;
+  return <SeveralBands spec={spec} />;
 }
 
 function SingleBand({ spec, slot }: { spec: RangeSpec; slot: number }) {
@@ -66,7 +68,9 @@ function SingleBand({ spec, slot }: { spec: RangeSpec; slot: number }) {
   );
 }
 
-function SeveralBands({ spec, bands }: { spec: RangeSpec; bands: readonly Band[] }) {
+/** Follows the selection's values itself, as the rest of the inspector does not. */
+function SeveralBands({ spec }: { spec: RangeSpec }) {
+  const bands = useSelection();
   const first = bands[0]![spec.field];
   const common = bands.every((band) => band[spec.field] === first) ? first : null;
   const edit = useRef<BandsEdit | null>(null);

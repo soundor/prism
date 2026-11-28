@@ -2,7 +2,7 @@ import { Tooltip, usePlotCoordinates } from '@soundor/components';
 import { textStyle, useTheme } from '@soundor/components/theme';
 import { Text, View } from '@soundor/react';
 import type { UiNode } from 'soundor:ui';
-import type { RefObject } from 'react';
+import { memo, type RefObject } from 'react';
 
 import {
   channelBadges,
@@ -14,7 +14,7 @@ import {
   type Band,
 } from '../bands/catalog';
 import { formatFrequency, formatGain, formatNote, formatQ } from '../bands/format';
-import { pointerStore, shiftStore } from './pointer';
+import { altStore, pointerStore, shiftStore, shownSource } from './pointer';
 import { useStore } from '../utils/store';
 
 // Views laid over the plot: the cursor readout, a band's tooltip and the
@@ -26,13 +26,21 @@ const PHASE_CAPTION_HEIGHT = 26;
 /**
  * Where the pointer is, while Alt is held: frequency, the nearest note and,
  * on the magnitude view, gain, in a chip at the plot's top left, and a line
- * down the plot at the pointer.
+ * down the plot at the pointer. Hidden while a band's tooltip shows its own.
+ * Only while it shows does it follow the pointer: a move without Alt renders
+ * nothing.
  */
-export function Readout({ hidden, phase = false }: { hidden: boolean; phase?: boolean }) {
+export function Readout({ phase = false }: { phase?: boolean }) {
+  const alt = useStore(altStore);
+  const band = useStore(shownSource);
+  return alt && band === null ? <PointerReadout phase={phase} /> : null;
+}
+
+function PointerReadout({ phase }: { phase: boolean }) {
   const theme = useTheme();
   const pointer = useStore(pointerStore);
   const { inner, rect, x, y } = usePlotCoordinates();
-  if (hidden || !pointer) return null;
+  if (!pointer) return null;
   const [px, py] = pointer;
   if (px < inner.left || px > inner.left + inner.width || py < rect.top) return null;
   if (py > rect.top + rect.height) return null;
@@ -126,7 +134,13 @@ export function BandTooltip({
 }
 
 /** The graph stays editable while bypassed or soloed. */
-export function GraphStatus({ label, color }: { label: string; color: string }) {
+export const GraphStatus = memo(function GraphStatus({
+  label,
+  color,
+}: {
+  label: string;
+  color: string;
+}) {
   const theme = useTheme();
   return (
     <View
@@ -159,7 +173,7 @@ export function GraphStatus({ label, color }: { label: string; color: string }) 
       </View>
     </View>
   );
-}
+});
 
 /** What the phase view shows, at the plot's top left. */
 export function PhaseCaption() {

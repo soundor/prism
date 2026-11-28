@@ -46,17 +46,34 @@ function channel<T>(initial: T) {
   return { source, publish: store.set };
 }
 
-/** Averages `values` over `width` points on each side, tilted by `tilt` dB per octave around 1 kHz. */
-function shape(values: ArrayLike<number>, offset: number, width: number, tilt: number) {
-  const out = new Float64Array(GRID_POINTS);
+/** Each grid frequency's octaves from 1 kHz, for the tilt. */
+const gridOctaves = gridFrequencies.map((frequency) => Math.log2(frequency / 1000));
+
+/**
+ * Averages `values` over `width` points on each side, tilted by `tilt` dB per
+ * octave around 1 kHz, into `out`. A running sum, so the work is the same at
+ * any smoothing: it runs about 60 times a second for each of two spectra.
+ */
+function shape(
+  values: ArrayLike<number>,
+  offset: number,
+  width: number,
+  tilt: number,
+  out: Float64Array,
+) {
+  let sum = 0;
+  // The window [i - width, i + width], clipped to the grid, starts as [0, width).
+  for (let j = 0; j < width && j < GRID_POINTS; j++) sum += values[offset + j]!;
   for (let i = 0; i < GRID_POINTS; i++) {
-    const start = Math.max(0, i - width);
-    const end = Math.min(GRID_POINTS - 1, i + width);
-    let sum = 0;
-    for (let j = start; j <= end; j++) sum += values[offset + j]!;
-    const level = sum / (end - start + 1);
-    // Silence stays at the floor, untilted.
-    out[i] = level <= SILENCE ? SILENCE : level + tilt * Math.log2(gridFrequencies[i]! / 1000);
+    const enter = i + width;
+    if (enter < GRID_POINTS) sum += values[offset + enter]!;
+    const leave = i - width - 1;
+    if (leave >= 0) sum -= values[offset + leave]!;
+    const count = Math.min(GRID_POINTS - 1, enter) - Math.max(0, i - width) + 1;
+    const level = sum / count;
+    // Silence stays at the floor, untilted; the running sum may be off by a
+    // rounding error, so a little leeway.
+    out[i] = level <= SILENCE + 1e-6 ? SILENCE : level + tilt * gridOctaves[i]!;
   }
   return out;
 }
@@ -67,6 +84,8 @@ export function createAnalyzer() {
   const postPoints = initial();
   const peakPoints = initial();
   const peakUntil = new Float64Array(GRID_POINTS);
+  const preLevels = new Float64Array(GRID_POINTS);
+  const postLevels = new Float64Array(GRID_POINTS);
   const pre = channel<PlotSamples>({ points: prePoints });
   const post = channel<PlotSamples>({ points: postPoints });
   // The plot clips this band to the current analyzer floor.
@@ -90,8 +109,8 @@ export function createAnalyzer() {
     const width = smoothingPoints[state.analyzerSmoothing.get()];
     const tilt = state.analyzerTilt.get();
     const hold = state.analyzerPeakHold.get();
-    const before = shape(spectrum, 0, width, tilt);
-    const after = shape(spectrum, GRID_POINTS, width, tilt);
+    const before = shape(spectrum, 0, width, tilt, preLevels);
+    const after = shape(spectrum, GRID_POINTS, width, tilt, postLevels);
     for (let i = 0; i < GRID_POINTS; i++) {
       prePoints[i]![1] = before[i]!;
       const level = after[i]!;

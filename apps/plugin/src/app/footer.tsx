@@ -17,6 +17,21 @@ import { rangeDecibels } from '../graph/axes';
 import { FOOTER_HEIGHT, GAP } from './layout';
 import { TrackInfo } from './track-info';
 
+const ANALYZER_MODES: { value: AnalyzerMode; label: string }[] = [
+  { value: 'off', label: 'Off' },
+  { value: 'pre', label: 'Pre' },
+  { value: 'post', label: 'Post' },
+  { value: 'prePost', label: 'Pre + Post' },
+];
+const DISPLAY_MODES: { value: DisplayMode; label: string }[] = [
+  { value: 'magnitude', label: 'Magnitude' },
+  { value: 'phase', label: 'Phase' },
+];
+const RANGES = (Object.keys(rangeDecibels) as DisplayRange[]).map((value) => ({
+  value,
+  label: `±${rangeDecibels[value]}`,
+}));
+
 export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
   const theme = useTheme();
   const analyzer = useStateValue(state.analyzerMode);
@@ -48,12 +63,7 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         size="sm"
         styles={compactSegments}
         value={analyzer}
-        options={[
-          { value: 'off', label: 'Off' },
-          { value: 'pre', label: 'Pre' },
-          { value: 'post', label: 'Post' },
-          { value: 'prePost', label: 'Pre + Post' },
-        ]}
+        options={ANALYZER_MODES}
         onChange={(value) => state.analyzerMode.set(value)}
       />
       <FooterToggle
@@ -75,10 +85,7 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         size="sm"
         styles={compactSegments}
         value={display}
-        options={[
-          { value: 'magnitude', label: 'Magnitude' },
-          { value: 'phase', label: 'Phase' },
-        ]}
+        options={DISPLAY_MODES}
         onChange={(value) => state.displayMode.set(value)}
       />
       <FooterToggle
@@ -102,10 +109,7 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         size="sm"
         styles={compactSegments}
         value={range}
-        options={(Object.keys(rangeDecibels) as DisplayRange[]).map((value) => ({
-          value,
-          label: `±${rangeDecibels[value]}`,
-        }))}
+        options={RANGES}
         onChange={(value) => state.displayRange.set(value)}
       />
       <TrackInfo />

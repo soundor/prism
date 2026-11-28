@@ -43,6 +43,11 @@ function Gain({ input }: { input: boolean }) {
   );
 }
 
+const NO_LEVELS = [undefined, undefined];
+const CHANNEL_LABELS = ['left', 'right'];
+const METER_TICKS = [0, -6, -12, -24, -48];
+const clipResetLabel = (channel: string | undefined) => `Output clip, ${channel}`;
+
 /** The output's level, as the processor measures it: left and right, in dBFS. */
 function StereoMeter() {
   const theme = useTheme();
@@ -52,15 +57,15 @@ function StereoMeter() {
   return (
     <View style={{ alignItems: 'center', gap: 9 }}>
       <LevelMeter
-        value={value ?? [undefined, undefined]}
+        value={value ?? NO_LEVELS}
         label="Output level"
-        channelLabels={['left', 'right']}
-        clipResetLabel={(channel) => `Output clip, ${channel}`}
+        channelLabels={CHANNEL_LABELS}
+        clipResetLabel={clipResetLabel}
         min={-60}
         max={6}
         fallRate={24}
         peakHold={1.5}
-        ticks={[0, -6, -12, -24, -48]}
+        ticks={METER_TICKS}
         length={362}
         size="md"
       />

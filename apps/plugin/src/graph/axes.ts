@@ -17,12 +17,16 @@ export const rangeDecibels: Record<DisplayRange, number> = {
 
 const gainSteps: Record<DisplayRange, number> = { db3: 1, db6: 2, db12: 3, db24: 6, db30: 10 };
 
-/** Gain ticks from −range to +range. */
-export function gainTicks(range: DisplayRange): number[] {
-  const limit = rangeDecibels[range];
-  const step = gainSteps[range];
-  return Array.from({ length: (2 * limit) / step + 1 }, (_, i) => -limit + i * step);
-}
+const gainTickSets = Object.fromEntries(
+  (Object.keys(rangeDecibels) as DisplayRange[]).map((range) => {
+    const limit = rangeDecibels[range];
+    const step = gainSteps[range];
+    return [range, Array.from({ length: (2 * limit) / step + 1 }, (_, i) => -limit + i * step)];
+  }),
+) as Record<DisplayRange, number[]>;
+
+/** Gain ticks from −range to +range: the same array for a range each time. */
+export const gainTicks = (range: DisplayRange): number[] => gainTickSets[range];
 
 /** The analyzer's floor, in dBFS: the bottom of its axis. */
 export const floorDecibels: Record<AnalyzerFloor, number> = { db60: -60, db90: -90, db120: -120 };

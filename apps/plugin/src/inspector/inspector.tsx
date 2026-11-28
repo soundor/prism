@@ -2,6 +2,7 @@ import { SegmentedControl, Select, type SelectOption } from '@soundor/components
 import { textStyle, ThemeProvider, useTheme } from '@soundor/components/theme';
 import { MousePointer2 } from '@soundor/icons/lucide';
 import { Text, View } from '@soundor/react';
+import { memo } from 'react';
 
 import { EDGE, GAP, INSPECTOR_HEIGHT } from '../app/layout';
 import {
@@ -22,13 +23,14 @@ import {
 } from '../bands/catalog';
 import { setBandsField } from '../bands/edit';
 import { FilterIcon } from '../bands/filter-icon';
-import { useSelection } from '../bands/selection';
-import { useBands } from '../bands/use-bands';
+import { getSelection, useSelectionShapes } from '../bands/selection';
+import { bandsSource } from '../bands/use-bands';
+import { useSelector } from '../utils/store';
 import { Actions } from './actions';
 import { BandStrip } from './band-strip';
 import { Cell, CellDivider, CONTROL_HEIGHT, NotUsed } from './cells';
 import { Identity } from './identity';
-import { RangeControls } from './range-cell';
+import { RangeControls, type RangeSpec } from './range-cell';
 import { frequencySpec, gainSpec, qSpec } from './range-specs';
 
 /** Knobs that fit the 40 px control row. */
@@ -44,9 +46,13 @@ const compactSegments = {
 // The persistent band inspector: the band strip, then one row of parameter
 // cells whose positions never change. With nothing selected the row says how
 // to select a band instead.
+//
+// It renders for what the cells show, not for frequency, gain or Q: a drag
+// on the graph renders none of it. Those values come from the knobs and fields
+// bound to the parameters, or for several bands from RangeControls itself.
 export function Inspector() {
   const theme = useTheme();
-  const selection = useSelection();
+  const selection = useSelectionShapes();
   return (
     <View
       style={{
@@ -68,9 +74,11 @@ export function Inspector() {
   );
 }
 
+const isEmpty = (bands: readonly Band[]) => bands.length === 0;
+
 function NothingSelected() {
   const theme = useTheme();
-  const empty = useBands().length === 0;
+  const empty = useSelector(bandsSource, isEmpty);
   return (
     <View
       style={{
@@ -118,108 +126,169 @@ const channelOptions = channels.map(({ value, label }) => ({
   hint: label,
 }));
 
+/** The selected slots, read when a control acts: the cells need not render for them. */
+const selectedNow = () => getSelection().map((band) => band.slot);
+
+/**
+ * The row of cells. Each cell is memoized on the plain values it shows, so a
+ * new selection renders only the cells that differ: from one bell to
+ * another, the band's identity and the knobs it binds to.
+ */
 function Cells({ bands }: { bands: readonly Band[] }) {
-  const theme = useTheme();
   const single = bands.length === 1 ? bands[0]! : null;
-  const slots = bands.map((band) => band.slot);
-  const type = common(bands, 'type');
-  const slope = common(bands, 'slope');
-  const channel = common(bands, 'channel');
   const gainApplies = bands.every((band) => hasGain(band.type));
   const qApplies = bands.every((band) => hasQ(band.type, band.slope));
-  const slopeApplies = bands.every((band) => hasSlope(band.type));
+  const allOn = bands.every((band) => band.enabled);
+  const someOn = bands.some((band) => band.enabled);
+  const slot = single?.slot ?? null;
 
   return (
     <ThemeProvider theme={compact}>
-      <View style={{ flex: 1, flexDirection: 'row' }}>
+      <View style={ROW}>
         <Cell width={140} caption={single ? 'Band' : 'Selection'}>
           <Identity bands={bands} />
         </Cell>
         <CellDivider />
-
-        <Cell width={150} caption="Type">
-          <Select<FilterType>
-            accessibilityLabel="Filter type"
-            size="md"
-            width={130}
-            options={typeOptions}
-            value={type ?? undefined}
-            mixed={type === null}
-            hideCheckmark
-            renderValue={(option) => (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <FilterIcon type={option.value} color={theme.color.text} />
-                <Text style={textStyle(theme, 'body', theme.color.text)}>{option.label}</Text>
-              </View>
-            )}
-            onChange={(value) => setBandsField(slots, 'type', value, 'Change filter type')}
-          />
-        </Cell>
+        <TypeCell type={common(bands, 'type')} />
         <CellDivider />
-
-        <Cell width={160} caption="Frequency">
-          <RangeControls spec={frequencySpec} bands={bands} />
-        </Cell>
+        <RangeCell spec={frequencySpec} width={160} caption="Frequency" slot={slot} />
         <CellDivider />
-
-        <Cell width={140} caption="Gain">
-          {gainApplies ? (
-            <RangeControls spec={gainSpec} bands={bands} />
-          ) : (
-            <NotUsed
-              reason={
-                single
-                  ? `Not used by ${filterTypeLabel(single.type).toLowerCase()}`
-                  : 'Not used by some'
-              }
-            />
-          )}
-        </Cell>
+        <RangeCell
+          spec={gainSpec}
+          width={140}
+          caption="Gain"
+          slot={slot}
+          unused={
+            gainApplies
+              ? null
+              : single
+                ? `Not used by ${filterTypeLabel(single.type).toLowerCase()}`
+                : 'Not used by some'
+          }
+        />
         <CellDivider />
-
-        <Cell width={130} caption={single ? `Q · ${qMeaning(single.type)}` : 'Q'}>
-          {qApplies ? (
-            <RangeControls spec={qSpec} bands={bands} />
-          ) : (
-            <NotUsed reason={single ? 'Not used at 6 dB/oct' : 'Not used by some'} />
-          )}
-        </Cell>
+        <RangeCell
+          spec={qSpec}
+          width={130}
+          caption={single ? `Q · ${qMeaning(single.type)}` : 'Q'}
+          slot={slot}
+          unused={qApplies ? null : single ? 'Not used at 6 dB/oct' : 'Not used by some'}
+        />
         <CellDivider />
-
-        <Cell width={164} caption="Slope · dB/oct">
-          {slopeApplies ? (
-            <SegmentedControl<Slope>
-              label="Slope"
-              size="sm"
-              styles={compactSegments}
-              options={slopeOptions}
-              value={slope ?? undefined}
-              mixed={slope === null}
-              onChange={(value) => setBandsField(slots, 'slope', value, 'Change slope')}
-            />
-          ) : (
-            <NotUsed reason="Cut filters only" />
-          )}
-        </Cell>
+        <SlopeCell
+          slope={common(bands, 'slope')}
+          applies={bands.every((band) => hasSlope(band.type))}
+        />
         <CellDivider />
-
-        <Cell width={164} caption="Channel">
-          <SegmentedControl<Channel>
-            label="Channel processing"
-            size="sm"
-            styles={compactSegments}
-            options={channelOptions}
-            value={channel ?? undefined}
-            mixed={channel === null}
-            onChange={(value) => setBandsField(slots, 'channel', value, 'Change channel')}
-          />
-        </Cell>
+        <ChannelCell channel={common(bands, 'channel')} />
         <CellDivider />
-
-        <Cell caption="" center>
-          <Actions bands={bands} />
-        </Cell>
+        <ActionsCell
+          on={allOn ? true : someOn ? 'mixed' : false}
+          solo={single ? single.solo : null}
+          count={bands.length}
+        />
       </View>
     </ThemeProvider>
   );
 }
+
+const ROW = { flex: 1, flexDirection: 'row' } as const;
+
+const TypeCell = memo(function TypeCell({ type }: { type: FilterType | null }) {
+  const theme = useTheme();
+  return (
+    <Cell width={150} caption="Type">
+      <Select<FilterType>
+        accessibilityLabel="Filter type"
+        size="md"
+        width={130}
+        options={typeOptions}
+        value={type ?? undefined}
+        mixed={type === null}
+        hideCheckmark
+        renderValue={(option) => (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <FilterIcon type={option.value} color={theme.color.text} />
+            <Text style={textStyle(theme, 'body', theme.color.text)}>{option.label}</Text>
+          </View>
+        )}
+        onChange={(value) => setBandsField(selectedNow(), 'type', value, 'Change filter type')}
+      />
+    </Cell>
+  );
+});
+
+/** A range cell for one band (`slot`) or several (null), or why it does not apply. */
+const RangeCell = memo(function RangeCell({
+  spec,
+  width,
+  caption,
+  slot,
+  unused = null,
+}: {
+  spec: RangeSpec;
+  width: number;
+  caption: string;
+  slot: number | null;
+  unused?: string | null;
+}) {
+  return (
+    <Cell width={width} caption={caption}>
+      {unused !== null ? <NotUsed reason={unused} /> : <RangeControls spec={spec} slot={slot} />}
+    </Cell>
+  );
+});
+
+const SlopeCell = memo(function SlopeCell({
+  slope,
+  applies,
+}: {
+  slope: Slope | null;
+  applies: boolean;
+}) {
+  return (
+    <Cell width={164} caption="Slope · dB/oct">
+      {applies ? (
+        <SegmentedControl<Slope>
+          label="Slope"
+          size="sm"
+          styles={compactSegments}
+          options={slopeOptions}
+          value={slope ?? undefined}
+          mixed={slope === null}
+          onChange={(value) => setBandsField(selectedNow(), 'slope', value, 'Change slope')}
+        />
+      ) : (
+        <NotUsed reason="Cut filters only" />
+      )}
+    </Cell>
+  );
+});
+
+const ChannelCell = memo(function ChannelCell({ channel }: { channel: Channel | null }) {
+  return (
+    <Cell width={164} caption="Channel">
+      <SegmentedControl<Channel>
+        label="Channel processing"
+        size="sm"
+        styles={compactSegments}
+        options={channelOptions}
+        value={channel ?? undefined}
+        mixed={channel === null}
+        onChange={(value) => setBandsField(selectedNow(), 'channel', value, 'Change channel')}
+      />
+    </Cell>
+  );
+});
+
+const ActionsCell = memo(function ActionsCell(props: {
+  on: boolean | 'mixed';
+  solo: boolean | null;
+  count: number;
+}) {
+  return (
+    <Cell caption="" center>
+      <Actions {...props} />
+    </Cell>
+  );
+});
