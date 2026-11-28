@@ -4,6 +4,7 @@ import { state } from 'soundor:state';
 
 import { FREQUENCY_MAX, FREQUENCY_MIN } from '../bands/catalog';
 import { GRID_POINTS, gridFrequencies, toPoints } from '../graph/response';
+import { createStore } from '../store';
 
 // The analyzer's traces and the spectrogram, from what the processor
 // measures (see lib/src/analyzer) about 60 times a second: the pre and post
@@ -38,23 +39,11 @@ const processorSettings = [
   state.showSpectrogram,
 ] as const;
 
+/** A source the plot reads, published as each frame comes: always new, if often the same object. */
 function channel<T>(initial: T) {
-  let current = initial;
-  const listeners = new Set<() => void>();
-  const source: PlotSource<T> = {
-    get: () => current,
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => listeners.delete(listener);
-    },
-  };
-  return {
-    source,
-    publish(next: T) {
-      current = next;
-      for (const listener of listeners) listener();
-    },
-  };
+  const store = createStore(initial, () => false);
+  const source: PlotSource<T> = store;
+  return { source, publish: store.set };
 }
 
 /** Averages `values` over `width` points on each side, tilted by `tilt` dB per octave around 1 kHz. */
