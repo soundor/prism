@@ -17,6 +17,9 @@ import { rangeDecibels } from '../graph/axes';
 import { FOOTER_HEIGHT, GAP } from './layout';
 import { TrackInfo } from './track-info';
 
+/** The resize grip's side, as ResizeGrip draws it by default. */
+const GRIP_SIZE = 18;
+
 const ANALYZER_MODES: { value: AnalyzerMode; label: string }[] = [
   { value: 'off', label: 'Off' },
   { value: 'pre', label: 'Pre' },
@@ -52,7 +55,9 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.spaceMd,
-        paddingHorizontal: 14,
+        paddingLeft: 14,
+        // Clear of the resize grip in the corner.
+        paddingRight: 14 + GRIP_SIZE,
         borderTopWidth: theme.size.borderHairline,
         borderColor: theme.color.divider,
       }}
