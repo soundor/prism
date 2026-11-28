@@ -29,5 +29,6 @@ minimumReleaseAgeExclude:
   - '@soundor/vst3-runtime@0.2.1'
   - '@soundor/web-runtime@0.18.0'
   - soundor@0.21.1
+  - '@soundor/vitest-e2e@0.21.1'
 patchedDependencies:
   '@soundor/components@0.6.0': patches/@soundor__components@0.6.0.patch

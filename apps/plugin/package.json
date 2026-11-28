@@ -8,7 +8,7 @@
   "scripts": {
     "bench:rust": "cargo test --release --locked --manifest-path lib/Cargo.toml --test benchmark -- --ignored --nocapture",
     "build:vst3": "soundor build vst3",
-    "build:vst3:debug": "soundor build vst3 --debug --out .soundor/debug",
+    "build:vst3:debug": "soundor build vst3 --debug",
     "build:web": "soundor build web",
     "dev:web": "soundor dev web",
     "doctor": "soundor doctor",
@@ -32,9 +32,9 @@
   "devDependencies": {
     "@playwright/test": "1.65.1",
     "@soundor/config": "0.21.1",
-    "@soundor/driver": "0.21.1",
     "@soundor/testing-library": "0.21.1",
     "@soundor/vitest": "0.21.1",
+    "@soundor/vitest-e2e": "0.21.1",
     "@soundor/vst3-host": "0.2.4",
     "@types/node": "24.19.2",
     "@types/react": "19.3.0",
