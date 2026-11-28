@@ -1,5 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "singleQuote": true,
-  "ignorePatterns": ["assets/brand/**"]
+  "ignorePatterns": [
+    "assets/brand/**",
+    ".release-please-manifest.json",
+    "**/CHANGELOG.md",
+    "**/content/docs/changelog.mdx"
+  ]
 }
