@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/changelog.ts && node scripts/sync-public.ts && vite build && tsc --noEmit",
-    "dev": "node scripts/changelog.ts && node scripts/sync-public.ts && vite dev --host 0.0.0.0 --port 3000 --strictPort",
+    "build": "node scripts/changelog.ts && node scripts/sync-public.ts && node scripts/screenshots.ts && vite build && tsc --noEmit",
+    "dev": "node scripts/changelog.ts && node scripts/sync-public.ts && node scripts/screenshots.ts && vite dev --host 0.0.0.0 --port 3000 --strictPort",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -15,7 +15,8 @@
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.19.4",
     "lucide-react": "1.74.0",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "swiper": "14.5.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.3.5",
@@ -24,6 +25,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.3.0",
+    "playwright": "1.65.1",
     "tailwindcss": "4.3.5",
     "typescript": "7.0.2",
     "vite": "8.3.8"
