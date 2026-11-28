@@ -15,6 +15,7 @@ import { state, type AnalyzerMode, type DisplayMode, type DisplayRange } from 's
 import { AnalyzerSettings, compactSegments } from '../analyzer/settings';
 import { rangeDecibels } from '../graph/axes';
 import { FOOTER_HEIGHT, GAP } from './layout';
+import { TrackInfo } from './track-info';
 
 export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
   const theme = useTheme();
@@ -107,6 +108,7 @@ export function Footer({ onFreeze }: { onFreeze: (value: boolean) => void }) {
         }))}
         onChange={(value) => state.displayRange.set(value)}
       />
+      <TrackInfo />
     </View>
   );
 }
