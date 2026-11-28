@@ -15,7 +15,7 @@ import {
 } from '../bands/catalog';
 import { formatFrequency, formatGain, formatNote, formatQ } from '../bands/format';
 import { pointerStore, shiftStore } from './pointer';
-import { useStore } from '../store';
+import { useStore } from '../utils/store';
 
 // Views laid over the plot: the cursor readout, a band's tooltip and the
 // hint on an empty graph. None of them takes the pointer.

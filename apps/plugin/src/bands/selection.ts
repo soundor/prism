@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { createStore, useStore } from '../store';
+import { createStore, useStore } from '../utils/store';
 
 import type { Band } from './catalog';
 import { useBands } from './use-bands';

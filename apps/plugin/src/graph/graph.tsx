@@ -27,7 +27,7 @@ import { BandMarker } from './band-marker';
 import { bandAt, moveGroup } from './editing';
 import { BandTooltip, EmptyHint, GraphStatus, PhaseCaption, Readout } from './overlays';
 import { altStore, pointerStore, trackModifiers } from './pointer';
-import { useStore } from '../store';
+import { useStore } from '../utils/store';
 import { formatDegrees, phasePoints, phaseTicks } from './phase';
 import { bandResponse, combine, GRID_POINTS, toPoints, type Response } from './response';
 import { PlotFrame, SpectrogramLayer, type Frame } from './spectrogram';
