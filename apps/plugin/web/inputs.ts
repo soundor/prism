@@ -1,37 +1,63 @@
-import { audioFile, defineInput } from '@soundor/web-runtime/input';
+import { audioFile, defineInput, microphone } from '@soundor/web-runtime/input';
 
-// A repeatable two-bar synth pattern with bass, harmonics and a noise hat.
-const demo = defineInput({
-  id: 'prism-demo',
-  label: 'Synth loop',
-  start({ context, destination, timeInSeconds }) {
-    const rate = context.sampleRate;
-    const buffer = context.createBuffer(1, rate * 4, rate);
-    const samples = buffer.getChannelData(0);
-    const pitches = [55, 55, 65.4, 73.4, 49, 49, 65.4, 82.4];
-    let seed = 9;
-    for (let i = 0; i < samples.length; i++) {
-      const time = i / rate;
-      const t = time % 0.5;
-      const phase = 2 * Math.PI * pitches[Math.floor(time * 2)]! * t;
-      const bass =
-        (Math.sin(phase) + 0.4 * Math.sin(phase * 7) + 0.2 * Math.sin(phase * 31)) *
-        Math.exp(-t * 12);
-      const h = time % 0.25;
-      seed = (seed * 16807) % 2147483647;
-      const hat = (seed / 1073741823.5 - 1) * Math.exp(-h * 42);
-      samples[i] = 0.12 * bass * Math.min(t * 500, 1) + 0.07 * hat * Math.min(h * 500, 1);
-    }
-    const source = context.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(destination);
-    source.start(0, timeInSeconds % buffer.duration);
-    return () => {
-      source.stop();
-      source.disconnect();
-    };
-  },
-});
+import { drumLoop, pinkNoise, sineSweep, synthLoop, type Channels } from './signals';
 
-export default [demo, audioFile()];
+/**
+ * A source that loops `render`'s samples, rendered once per sample rate and
+ * started where the transport is.
+ */
+function loop(id: string, label: string, render: (rate: number) => Channels) {
+  const rendered = new Map<number, Channels>();
+  return defineInput({
+    id,
+    label,
+    start({ context, destination, timeInSeconds }) {
+      const rate = context.sampleRate;
+      let channels = rendered.get(rate);
+      if (!channels) {
+        channels = render(rate);
+        rendered.set(rate, channels);
+      }
+      const buffer = context.createBuffer(channels.length, channels[0]!.length, rate);
+      channels.forEach((samples, channel) => buffer.copyToChannel(samples, channel));
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.connect(destination);
+      source.start(0, timeInSeconds % buffer.duration);
+      return () => {
+        source.stop();
+        source.disconnect();
+      };
+    },
+  });
+}
+
+/** A steady sine: the built-in oscillator would be labelled only "Oscillator". */
+function tone(frequency: number, label: string) {
+  return defineInput({
+    id: `prism-tone-${frequency}`,
+    label,
+    start({ context, destination }) {
+      const oscillator = new OscillatorNode(context, { type: 'sine', frequency });
+      const gain = new GainNode(context, { gain: 0.25 });
+      oscillator.connect(gain).connect(destination);
+      oscillator.start();
+      return () => {
+        oscillator.stop();
+        oscillator.disconnect();
+        gain.disconnect();
+      };
+    },
+  });
+}
+
+export default [
+  loop('prism-demo', 'Synth loop', synthLoop),
+  loop('prism-drums', 'Drum loop', drumLoop),
+  loop('prism-pink-noise', 'Pink noise', pinkNoise),
+  loop('prism-sweep', 'Sine sweep', sineSweep),
+  tone(1000, '1 kHz sine'),
+  audioFile(),
+  microphone(),
+];
