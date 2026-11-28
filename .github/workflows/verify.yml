@@ -37,8 +37,17 @@ jobs:
       - uses: ./.github/actions/vst3
         with:
           platform: ${{ matrix.platform }}
-      # The built plugin in Soundor's headless VST3 host.
-      - run: pnpm --filter prism test:vst3
+      # The built plugin in Soundor's headless VST3 host, and a Debug build
+      # with its editor open, driven as a user would. The editor needs a
+      # display: Xvfb on Linux. Neither build is uploaded.
+      - run: pnpm --filter prism build:vst3:debug
+      - shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == Linux ]]; then
+            xvfb-run -a pnpm --filter prism test:vst3
+          else
+            pnpm --filter prism test:vst3
+          fi
 
   browser:
     name: Browser (e2e)

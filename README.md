@@ -22,18 +22,19 @@ Use Node 24, Corepack, and Rust via `rustup` with `rustfmt` and the `wasm32-unkn
 corepack enable
 pnpm install --frozen-lockfile
 pnpm check          # format, lint, types, UI and DSP tests, and static site build
-pnpm test:e2e       # build the browser plugin and test each editor state in Chromium
+pnpm test:e2e       # build the browser plugin and test the editor and its audio in Chromium
 pnpm dev            # Soundor browser runtime in development mode
 pnpm website        # run the Fumadocs website at localhost:3000
 pnpm build:vst3     # apps/plugin/.soundor/dist/vst3/Soundor Prism.vst3
-pnpm test:vst3      # build the VST3 and test it in Soundor's headless VST3 host
+pnpm test:vst3      # build the VST3 and a Debug build, and test the audio and the open editor
+                    # in Soundor's VST3 host (on Linux without a display: xvfb-run -a pnpm test:vst3)
 pnpm bench:rust     # CPU at the heaviest load: 24 steep gliding bands at 192 kHz, analyzer on
 ```
 
 Before running browser tests for the first time, install Chromium with
 `pnpm --filter prism exec playwright install --with-deps chromium`.
 
-For local VST3 use, copy the resulting bundle into a location your host scans for VST3 plugins, then rescan. For the browser demo, press Play for the included synth loop or select Audio file to play a local file.
+For local VST3 use, copy the resulting bundle into a location your host scans for VST3 plugins, then rescan. For the browser demo, press Play for the included synth loop, or pick another input in the host settings.
 
 - `apps/plugin`: Soundor configuration and factory presets, the React editor (feature folders under `src`: `app`, `analyzer`, `bands`, `graph`, `inspector`, `meters`, `presets`), the Rust processor, and demo input.
 - `apps/website`: Fumadocs on TanStack Start, with a landing page, searchable MDX docs in `content/docs`, and the browser demo. `pnpm build` prerenders the site to `apps/website/dist/client`.
